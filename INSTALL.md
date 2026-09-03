@@ -35,7 +35,7 @@ Installe l'extension étape par étape, sans jamais rien casser. Suis ces règle
    différente, remplace-le) :
    a) `.claude/skills/double-ia/` et `.claude/skills/setup-double-ia/`
       → dans `.claude/skills/` ;
-   b) `tools/double_ia.py` → dans `tools/` ;
+   b) `tools/double_ia.py` et `tools/build_audio_cut.py` → dans `tools/` ;
    c) AIGUILLAGE : si `templates/AGENT.md.tpl` ne contient PAS le marqueur
       « BEGIN EXTENSION: double-ia », ajoute le contenu INTÉGRAL du fichier
       `templates/agent-extension-double-ia.md` de l'extension À LA FIN de

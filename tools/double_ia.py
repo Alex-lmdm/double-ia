@@ -7,6 +7,15 @@ Sous-commandes :
     python3 tools/double_ia.py consent            # lien webcam de consentement (10 s)
     python3 tools/double_ia.py generate <audio>   # audio de ta voix → vidéo de ton double
 
+Ordre du workflow (verrouillé) : dérush de l'audio (tools/build_audio_cut.py) → validation à
+l'oreille → nettoyage audio → `generate` sur le fichier NETTOYÉ. Jamais sur le brut : chaque
+seconde générée est facturée, et l'audio envoyé devient la piste son finale (on ne peut plus
+le nettoyer après sans casser le lip sync).
+
+`generate` écrit `derush/<slug>_enhanced.mp4` (le même livrable qu'un dérush filmé, pour que
+le montage enchaîne à l'identique) et, si `derush/<slug>_audio_timeline.json` existe (produit
+par build_audio_cut.py), le `derush/<slug>_cuts.json` que le montage exige.
+
 La config du double vit dans `double-ia.config.json` à la racine du projet (écrite par
 `create`). La clé API vient de $HEYGEN_API_KEY, sinon de ~/.heygen/credentials.
 
@@ -25,6 +34,8 @@ import json
 import mimetypes
 import os
 import pathlib
+import re
+import shutil
 import subprocess
 import sys
 import time
@@ -32,6 +43,29 @@ import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CONFIG = ROOT / "double-ia.config.json"
+
+
+def brand_config():
+    for name in ("brand.config.json", "brand.config.example.json"):
+        p = ROOT / name
+        if p.exists():
+            return json.loads(p.read_text(encoding="utf-8"))
+    return {}
+
+
+def ffbin(name):
+    """ffmpeg / ffprobe : brand.config.json → env.ffmpegPath, sinon le PATH."""
+    d = (brand_config().get("env") or {}).get("ffmpegPath")
+    if d:
+        for cand in (pathlib.Path(d) / name, pathlib.Path(d) / f"{name}.exe"):
+            if cand.exists():
+                return str(cand)
+    return shutil.which(name) or name
+
+
+def slug_of(audio):
+    """codes-chatgpt_voice_enhanced.mp3 → codes-chatgpt (on retire les suffixes du pipeline)."""
+    return re.sub(r"(_voice)?(_enhanced|_clean|_optimis[ée](-v\d+)?)*$", "", audio.stem) or audio.stem
 BASE = "https://api.heygen.com"
 FPS = "30000/1001"
 RATE_PER_SEC = 0.073  # $/s constaté (tarif affiché 0,0667 — HeyGen arrondit au-dessus)
@@ -88,7 +122,7 @@ def balance():
 
 def duration(path):
     return float(subprocess.run(
-        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+        [ffbin("ffprobe"), "-v", "error", "-show_entries", "format=duration",
          "-of", "default=nw=1:nk=1", str(path)],
         capture_output=True, text=True, check=True).stdout.strip())
 
@@ -149,8 +183,18 @@ def cmd_generate(a):
     if not c.get("avatar_id"):
         sys.exit("Pas de double configuré : lance /setup-double-ia (ou `create <video>`).")
     engine = a.engine or c.get("engine", "avatar_iv")
-    out = pathlib.Path(a.out) if a.out else ROOT / "derush" / f"{audio.stem}_double.mp4"
+    slug = a.slug or slug_of(audio)
+    out = pathlib.Path(a.out) if a.out else ROOT / "derush" / f"{slug}_enhanced.mp4"
     out.parent.mkdir(parents=True, exist_ok=True)
+    timeline_path = ROOT / "derush" / f"{slug}_audio_timeline.json"
+    if "_voice." in audio.name and "enhanced" not in audio.name and not a.allow_raw:
+        sys.exit(f"{audio.name} est le cut NON nettoyé. Nettoie-le d'abord (audio.enhanceMethod "
+                 f"de brand.config.json) → derush/{slug}_voice_enhanced.mp3, puis génère sur "
+                 f"celui-là. L'audio envoyé devient la piste son finale. (--allow-raw pour forcer.)")
+    if not timeline_path.exists() and not a.allow_raw:
+        sys.exit(f"Pas de derush/{slug}_audio_timeline.json : cet audio n'a pas été dérushé avec "
+                 f"tools/build_audio_cut.py. Coupe d'abord les blancs et les ratés (chaque seconde "
+                 f"générée est facturée). Audio déjà propre et lu d'une traite ? --allow-raw.")
 
     dur = duration(audio)
     if dur > 600:
@@ -185,7 +229,7 @@ def cmd_generate(a):
     raw = out.with_name(out.stem + "_raw25.mp4")
     urllib.request.urlretrieve(v["video_url"], raw)
     # 25 → 29,97 fps + on remet TON audio (HeyGen ré-encode le sien, moins bon)
-    subprocess.run(["ffmpeg", "-v", "error", "-i", str(raw), "-i", str(audio),
+    subprocess.run([ffbin("ffmpeg"), "-v", "error", "-i", str(raw), "-i", str(audio),
                     "-map", "0:v:0", "-map", "1:a:0", "-vf", f"fps={FPS}",
                     "-c:v", "libx264", "-crf", "14", "-preset", "slow", "-pix_fmt", "yuv420p",
                     "-c:a", "aac", "-b:a", "192k", "-shortest", "-y", str(out)], check=True)
@@ -198,6 +242,32 @@ def cmd_generate(a):
         rel = out
     print(f"\n{rel} — 1080x1920 @ 29,97 fps — {dur:.1f} s")
     print(f"Coût réel : {spent:.2f} $ — solde restant {b - spent:.2f} $")
+    cuts = write_cuts(slug, out, timeline_path if timeline_path.exists() else None)
+    print(f"{cuts.relative_to(ROOT)} — frontières des prises pour le montage "
+          f"(tools/sections.py → CUTS_PATH)")
+
+
+def write_cuts(slug, video, timeline_path):
+    """Le <slug>_cuts.json que le montage lit (tools/sections.py). Pas de scene-change ici :
+    le double ne saute pas à l'image, les frontières sont celles du cut audio (chaque prise
+    absorbe le souffle qui la suit, prises contiguës, dernière borne = durée du fichier)."""
+    dur = round(duration(video), 3)
+    takes = []
+    if timeline_path:
+        src = json.loads(timeline_path.read_text(encoding="utf-8"))["takes"]
+        for i, t in enumerate(src):
+            start = 0.0 if i == 0 else takes[-1]["end"]
+            end = dur if i == len(src) - 1 else round(float(src[i + 1]["start"]), 3)
+            takes.append({"i": i, "start": start, "end": end, "text": t.get("text", "")})
+    else:
+        takes.append({"i": 0, "start": 0.0, "end": dur, "text": ""})
+    out = ROOT / "derush" / f"{slug}_cuts.json"
+    out.write_text(json.dumps({"source": str(video.relative_to(ROOT)) if video.is_relative_to(ROOT) else str(video),
+                               "duration": dur,
+                               "method": "double IA : frontières du cut audio (build_audio_cut.py), pas de scene-change",
+                               "takes": takes}, ensure_ascii=False, indent=2) + "\n",
+                   encoding="utf-8")
+    return out
 
 
 def main():
@@ -211,8 +281,11 @@ def main():
     c.add_argument("--force", action="store_true", help="recréer même si un double existe")
     sub.add_parser("consent", help="lien webcam de consentement")
     g = sub.add_parser("generate", help="audio → vidéo de ton double")
-    g.add_argument("audio", help="MP3 ou WAV de ta voix (max 10 min / 50 Mo)")
-    g.add_argument("-o", "--out", help="MP4 de sortie (défaut : derush/<audio>_double.mp4)")
+    g.add_argument("audio", help="le cut NETTOYÉ de ta voix, derush/<slug>_voice_enhanced.mp3 (max 10 min / 50 Mo)")
+    g.add_argument("-o", "--out", help="MP4 de sortie (défaut : derush/<slug>_enhanced.mp4)")
+    g.add_argument("--slug", help="nom du reel (défaut : déduit du nom de l'audio)")
+    g.add_argument("--allow-raw", action="store_true",
+                   help="générer un audio qui n'est pas passé par build_audio_cut.py (déjà propre, lu d'une traite)")
     g.add_argument("--engine", choices=["avatar_iv", "avatar_v"],
                    help="défaut : celui de la config (avatar_iv)")
     g.add_argument("--yes", action="store_true", help="ne pas demander confirmation du coût")

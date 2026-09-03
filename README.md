@@ -50,10 +50,19 @@ première génération. ~20 minutes, une seule fois.
 
 Deux phrases à dire à ton monteur :
 
-1. **« Écris-moi un script de reel »** — comme d'habitude. Puis tu le lis au dictaphone,
-   d'une seule traite.
-2. **« Voici l'audio, utilise mon double »** — il génère la vidéo, coupe les éventuels
-   blancs, et enchaîne le montage complet comme si tu avais tourné.
+1. **« Écris-moi un script de reel »** — comme d'habitude. Puis tu le lis au dictaphone de
+   ton téléphone, comme au prompteur : phrase par phrase, tu peux te reprendre, il gardera la
+   dernière version de chaque phrase.
+2. **« Voici l'audio, utilise mon double »** — et il déroule, dans cet ordre :
+   - il **coupe l'audio** (blancs, faux départs, phrases reprises), comme il dérushe une
+     vidéo filmée ;
+   - tu **écoutes et tu valides** ;
+   - il **nettoie le son** (Adobe Enhance ou 100 % local, selon ton réglage Monteur IA) ;
+   - il **génère la vidéo** avec ton double, après t'avoir annoncé le coût ;
+   - il **enchaîne le montage complet** comme si tu avais tourné.
+
+Le jour où tu te filmes pour de vrai, rien ne change : tu lui donnes ta vidéo, l'extension
+reste silencieuse et le montage habituel s'applique.
 
 ## FAQ
 

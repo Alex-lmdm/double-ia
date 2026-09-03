@@ -104,14 +104,22 @@ Propose les deux portes d'entrée :
    du Monteur IA (`reel-script`), écris le script, fais-le valider, PUIS il le lit au
    dictaphone.
 
-Règles à donner pour l'audio : une seule traite, sans coupures ni « euh » (s'il se
-rate, il recommence la lecture — c'est 30 s), dans un endroit calme.
+Règles à donner pour l'audio : dans un endroit calme, le téléphone près de la bouche, et
+**comme au prompteur** : phrase par phrase, il peut se reprendre autant de fois qu'il veut,
+la dernière version de chaque phrase sera gardée. Pas besoin de recommencer tout
+l'enregistrement pour un raté : je coupe les blancs et les ratés avant de générer, exactement
+comme je dérushe une vidéo filmée.
 
-À réception de l'audio, passe la main au skill **`double-ia`** (c'est lui qui gère la
-génération et la suite du montage).
+À réception de l'audio, passe la main au skill **`double-ia`** (c'est lui qui gère le dérush
+de l'audio, la validation, le nettoyage, la génération et la suite du montage). Annonce
+l'ordre à l'utilisateur pour qu'il sache ce qui vient : « je coupe ton audio, tu l'écoutes et
+tu valides, on le nettoie, PUIS je génère la vidéo (je t'annonce le coût avant), puis on monte
+comme d'habitude ».
 
 ## Étape 8 — Clôture de l'onboarding
 
 Quand la première vidéo est là, explique le mode de croisière : « C'est configuré pour
 de bon. La prochaine fois, envoie-moi juste un audio en me disant "utilise mon double",
-et je te rends la vidéo montée. Tu peux aussi me demander d'écrire le script d'abord. »
+et je te rends la vidéo montée. Tu peux aussi me demander d'écrire le script d'abord. Et
+quand tu te filmes pour de vrai, rien ne change : tu m'envoies ta vidéo, on monte comme
+avant. »
