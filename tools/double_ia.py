@@ -188,8 +188,8 @@ def cmd_generate(a):
     out.parent.mkdir(parents=True, exist_ok=True)
     timeline_path = ROOT / "derush" / f"{slug}_audio_timeline.json"
     if "_voice." in audio.name and "enhanced" not in audio.name and not a.allow_raw:
-        sys.exit(f"{audio.name} est le cut NON nettoyé. Nettoie-le d'abord (audio.enhanceMethod "
-                 f"de brand.config.json) → derush/{slug}_voice_enhanced.mp3, puis génère sur "
+        sys.exit(f"{audio.name} est le cut NON nettoyé. Nettoie-le d'abord avec Adobe Podcast "
+                 f"Enhance (skill double-ia, étape 3) → derush/{slug}_voice_enhanced.mp3, puis génère sur "
                  f"celui-là. L'audio envoyé devient la piste son finale. (--allow-raw pour forcer.)")
     if not timeline_path.exists() and not a.allow_raw:
         sys.exit(f"Pas de derush/{slug}_audio_timeline.json : cet audio n'a pas été dérushé avec "

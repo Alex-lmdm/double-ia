@@ -42,7 +42,7 @@ d'installation : il est dans **[INSTALL.md](INSTALL.md)**. Puis tape :
 /setup-double-ia
 ```
 
-Ton monteur te guide de zéro, pas à pas : compte HeyGen, clé, ta vidéo d'entraînement,
+(sous Codex, dis-lui simplement « setup double IA »). Ton monteur te guide de zéro, pas à pas : compte HeyGen, clé, ta vidéo d'entraînement,
 le consentement (10 s à la webcam — personne ne peut cloner quelqu'un d'autre), et ta
 première génération. ~20 minutes, une seule fois.
 
@@ -57,7 +57,7 @@ Deux phrases à dire à ton monteur :
    - il **coupe l'audio** (blancs, faux départs, phrases reprises), comme il dérushe une
      vidéo filmée ;
    - tu **écoutes et tu valides** ;
-   - il **nettoie le son** (Adobe Enhance ou 100 % local, selon ton réglage Monteur IA) ;
+   - il **nettoie le son** avec Adobe Podcast Enhance (tu glisses un fichier, il fait le reste) ;
    - il **génère la vidéo** avec ton double, après t'avoir annoncé le coût ;
    - il **enchaîne le montage complet** comme si tu avais tourné.
 

@@ -17,7 +17,7 @@ et le montage reprend ensuite le pipeline Reel habituel à l'identique. La voix 
 **Ordre verrouillé quand un audio arrive** (le détail vit dans `double-ia`) :
 **1. dérush de l'audio** (`tools/build_audio_cut.py` : blancs, faux départs, phrases reprises →
 on garde la dernière tentative complète) → **2. l'utilisateur valide à l'oreille** →
-**3. nettoyage audio** (`audio.enhanceMethod`) → **4. génération** (`tools/double_ia.py
+**3. nettoyage audio avec Adobe Podcast Enhance** (toujours, aucune autre méthode) → **4. génération** (`tools/double_ia.py
 generate` sur le fichier nettoyé, ⛔ **jamais sans accord explicite sur le coût**, ~2 $ le
 reel de 30 s) → **5. montage normal** à partir de `derush/<slug>_enhanced.mp4` +
 `<slug>_cuts.json`, les mêmes livrables qu'un dérush filmé. On ne génère jamais le brut

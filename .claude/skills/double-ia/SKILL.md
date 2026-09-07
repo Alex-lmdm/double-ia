@@ -42,7 +42,7 @@ pipeline Monteur IA normal (`derush` puis `motion-design`), le double n'intervie
 |---|---|---|---|
 | 1 | **Dérush de l'audio** | toi | `derush/<slug>_voice.mp3` : lecture = script, zéro doublon, zéro mot coupé, souffles ≈ 0,10 s |
 | 2 | **Validation à l'oreille** | l'utilisateur | il a écouté le MP3 et dit OK (contenu + rythme) |
-| 3 | **Nettoyage audio** | selon `audio.enhanceMethod` | `derush/<slug>_voice_enhanced.mp3`, **même durée** que le cut |
+| 3 | **Nettoyage audio** | Adobe Podcast Enhance (l'utilisateur glisse le MP3, toi le reste) | `derush/<slug>_voice_enhanced.mp3`, **même durée** que le cut |
 | 4 | **Génération** | toi, après accord sur le coût | `derush/<slug>_enhanced.mp4` + `<slug>_cuts.json` |
 | 5 | **Vérification du rendu** | toi | pas d'artefact, lip sync OK, 1080x1920 @ 29,97 |
 | 6 | **Montage normal** | `motion-design` | comme avec un vrai rush |
@@ -99,16 +99,21 @@ rebuild, re-vérifier.
 
 ## Étape 3 — Nettoyer l'audio (toujours, pas seulement « si ça grésille »)
 
-Le choix vient de `brand.config.json` → `audio.enhanceMethod` :
+Une seule méthode, **toujours la même** : Adobe Podcast Enhance (gratuit, compte Adobe). Ne
+propose jamais d'alternative (pas de filtre ffmpeg, pas de « je le fais moi-même »). C'est le
+même geste que le skill `derush` §7 :
 
-- **`adobe`** (recommandé, meilleure qualité) : ouvrir `https://podcast.adobe.com/enhance`,
-  **l'utilisateur glisse lui-même** `<slug>_voice.mp3` (l'upload passe par le sélecteur natif
-  de l'OS, tu ne peux pas le faire à sa place), il télécharge la version optimisée, tu la
-  copies en `derush/<slug>_voice_enhanced.mp3`.
-- **`ffmpeg`** (100 % local, zéro geste) :
-  `ffmpeg -y -i derush/<slug>_voice.mp3 -af "highpass=f=90,afftdn=nf=-25,anlmdn=s=4:p=0.002:r=0.006,loudnorm=I=-16:TP=-1.5:LRA=11" -c:a libmp3lame -b:a 320k derush/<slug>_voice_enhanced.mp3`
+1. Donne à l'utilisateur, en un seul message, exactement ces consignes puis attends :
+   > « Ouvre https://podcast.adobe.com/enhance (connecté à ton compte Adobe), glisse le fichier
+   > `<slug>_voice.mp3` que je viens de te montrer sur la zone « Optimiser », attends la fin du
+   > traitement, clique « Télécharger », puis dis-moi "c'est téléchargé". »
+   ⚠️ L'upload passe par le sélecteur de fichiers natif de l'OS : **tu ne peux pas le faire à sa
+   place**, n'essaie pas.
+2. Quand il dit que c'est téléchargé : prends le fichier le plus récent du dossier de
+   téléchargements dont le nom commence par `<slug>_voice` (Adobe le renomme), copie-le en
+   `derush/<slug>_voice_enhanced.mp3`. S'il n'y en a aucun, redonne la consigne, sans improviser.
 
-Dans les deux cas, **vérifier que la durée est identique** au cut (`ffprobe … format=duration`)
+**Vérifier que la durée est identique** au cut (`ffprobe … format=duration`, écart < 0,1 s)
 avant de générer. **C'est ce fichier nettoyé, et lui seul, qui part en génération.**
 
 ## Étape 4 — Générer
