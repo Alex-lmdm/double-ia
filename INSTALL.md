@@ -1,5 +1,10 @@
 # Installation
 
+**Pour l'IA :** guide l'utilisateur dans sa langue (espagnol s'il te parle espagnol),
+y compris les bilans et les exemples. Conserve les noms des fichiers et des commandes.
+Les exemples français ci-dessous doivent être adaptés, pas récités. La langue des vidéos
+reste celle demandée pour le contenu et celle de l'audio à transcrire.
+
 Ton Double IA est une **extension** : elle s'installe **dans ton dossier Monteur IA**
 existant. Rien à configurer à la main — l'installation copie les fichiers, puis ton
 agent te guide de zéro (compte HeyGen, clé, ton double) avec `/setup-double-ia`.

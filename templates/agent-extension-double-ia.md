@@ -7,11 +7,15 @@ il fournit un **audio** de sa vraie voix (lu au dictaphone), son double HeyGen f
 et le montage reprend ensuite le pipeline Reel habituel à l'identique. La voix n'est
 **jamais** clonée.
 
+Réponds dans la langue de l'utilisateur et reconnais aussi les demandes en espagnol.
+Les exemples français ci-dessous sont illustratifs. Garde les noms techniques inchangés
+et transcris l'audio dans sa langue réelle, sans traduction implicite.
+
 | L'utilisateur dit… | Route |
 |---|---|
-| un **audio** + « utilise mon double », « génère avec mon avatar » | charge le skill **`double-ia`** (remplace les étapes 2 tournage + 3 dérush) |
+| un **audio** + « utilise mon double », « génère avec mon avatar », « utiliza mi doble » | charge le skill **`double-ia`** (remplace les étapes 2 tournage + 3 dérush) |
 | une **vidéo** de lui (« voici la vidéo brute ») | **pipeline normal**, `derush` puis `motion-design` : l'extension ne s'active pas |
-| `/setup-double-ia`, « crée mon double », « configure HeyGen », ou `double-ia.config.json` absent | charge le skill **`setup-double-ia`** |
+| `/setup-double-ia`, « crée mon double », « configure HeyGen », « configura mi doble », ou `double-ia.config.json` absent | charge le skill **`setup-double-ia`** |
 | « écris le script d'abord » puis lecture au dictaphone | `reel-script`, PUIS `double-ia` avec l'audio |
 
 **Ordre verrouillé quand un audio arrive** (le détail vit dans `double-ia`) :
