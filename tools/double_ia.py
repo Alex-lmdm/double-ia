@@ -46,13 +46,20 @@ try:  # Monteur IA 2 : un Reel = un projet (reels/<nom>/), réglages dans le dos
     from lieux import MAISON, REEL
 except ImportError:  # Monteur IA 1 : tout vit à la racine du projet
     MAISON = REEL = ROOT
+    # Windows : une sortie lue par l'agent (redirigée) est en cp1252, et un « → » y fait planter
+    # l'outil. Monteur IA 2 règle ça dans lieux.py.
+    for _flux in (sys.stdout, sys.stderr):
+        try:
+            _flux.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
 
 
 def dossier_reel():
     """Le Reel où écrire le dérush ; depuis la racine de Monteur IA 2, on demande d'en créer un."""
     if REEL is None:
         sys.exit("Lance cette commande depuis le dossier du Reel (reels/<nom>/). Pas encore de Reel : "
-                 "python3 tools/nouveau_reel.py \"<sujet>\", puis entre dans son dossier.")
+                 f"python3 \"{MAISON / 'tools' / 'nouveau_reel.py'}\" \"<sujet>\", puis entre dans son dossier.")
     return REEL
 CONFIG = MAISON / "double-ia.config.json"
 
@@ -66,11 +73,14 @@ def brand_config():
 
 
 def ffbin(name):
-    """ffmpeg / ffprobe : brand.config.json → env.ffmpegPath, sinon le PATH."""
-    d = (brand_config().get("env") or {}).get("ffmpegPath")
-    if d:
-        for cand in (pathlib.Path(d) / name, pathlib.Path(d) / f"{name}.exe"):
-            if cand.exists():
+    """ffmpeg / ffprobe : brand.config.json → env.ffmpegPath, le dossier qui les contient (Monteur IA 2)
+    ou le chemin de ffmpeg lui-même (Monteur IA 1, `which ffmpeg`) ; sinon le PATH."""
+    v = (brand_config().get("env") or {}).get("ffmpegPath")
+    if v:
+        p = pathlib.Path(v).expanduser()
+        d = p if p.is_dir() else p.parent
+        for cand in (d / name, d / f"{name}.exe"):
+            if cand.is_file():
                 return str(cand)
     return shutil.which(name) or name
 
