@@ -21,9 +21,11 @@ jamais la voix : l'audio envoyé EST la piste son finale du Reel.** C'est ce qui
 résultat naturel.
 
 **Où travailler :** dans le dossier du Reel (`reels/<nom>/`, un projet par Reel) : les chemins
-`derush/…` et `tools/…` de ce skill partent de là. Pas encore de Reel : `python3 tools/nouveau_reel.py
-"<sujet>"` d'abord. La config du double, elle, reste dans le dossier Monteur IA, partagée par tous
-les Reels. (Ancienne installation sans `reels/` : tout se passe à la racine, comme avant.)
+`derush/…` et `tools/…` de ce skill partent de là. Pas encore de Reel : crée-le d'abord, comme pour
+une vidéo filmée, avec `tools/nouveau_reel.py "<sujet>"` du dossier Monteur IA (depuis l'accueil de
+l'app : `../tools/nouveau_reel.py`), puis travaille dans son dossier. La config du double, elle,
+reste dans le dossier Monteur IA, partagée par tous les Reels. (Ancienne installation sans
+`reels/` : tout se passe à la racine, comme avant.)
 
 **Quand cette extension ne s'active pas :** l'utilisateur t'envoie une **vidéo** de lui →
 pipeline Monteur IA normal (`derush` puis `motion-design`), le double n'intervient pas.

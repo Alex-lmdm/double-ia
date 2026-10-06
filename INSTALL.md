@@ -6,7 +6,7 @@ Les exemples français ci-dessous doivent être adaptés, pas récités. La lang
 reste celle demandée pour le contenu et celle de l'audio à transcrire.
 
 Ton Double IA est une **extension** : elle s'installe **dans ton dossier Monteur IA**
-existant. Rien à configurer à la main — l'installation copie les fichiers, puis ton
+existant. Rien à configurer à la main : l'installation copie les fichiers, puis ton
 agent te guide de zéro (compte HeyGen, clé, ton double) avec `/setup-double-ia`.
 
 > ⚠️ **Prérequis : Monteur IA installé et fonctionnel.** Si ce n'est pas encore fait,
@@ -17,9 +17,9 @@ agent te guide de zéro (compte HeyGen, clé, ton double) avec `/setup-double-ia
 ## 🚀 Le prompt d'installation
 
 > **Le plus simple :** ouvre ton agent (Claude Code ou Codex) **dans ton dossier
-> Monteur IA** et dis-lui : « Télécharge l'extension
-> https://github.com/Alex-lmdm/double-ia et suis les instructions d'installation de son
-> INSTALL.md. » Il fait tout.
+> Monteur IA** (dans l'app HyperFrames : l'accueil ou un Reel de Monteur IA conviennent) et
+> dis-lui : « Télécharge l'extension https://github.com/Alex-lmdm/double-ia et suis les
+> instructions d'installation de son INSTALL.md. » Il fait tout.
 
 **Pour l'IA, si on te demande de télécharger l'extension :** télécharge-la dans un dossier
 temporaire (celui de la mise à jour de Monteur IA convient), jamais dans le dossier Monteur IA. Crée-le avec
@@ -45,12 +45,15 @@ Tu es mon assistant d'installation pour l'extension « Ton Double IA » de mon M
 Le dossier de l'extension dézippé est ici : ~/Downloads/double-ia-main
 Installe l'extension étape par étape, sans jamais rien casser. Suis ces règles :
 
-1. VÉRIFIE d'abord que le dossier courant est bien une installation Monteur IA : les
-   dossiers `tools/` et `.claude/skills/` existent, et `brand.config.json` ou
-   `brand.config.example.json` est présent. Si ce n'est pas le cas, ARRÊTE-TOI et
-   dis-moi d'ouvrir mon agent dans mon dossier Monteur IA.
+1. TROUVE mon dossier Monteur IA, appelé MAISON ci-dessous : le dossier courant s'il
+   contient `templates/AGENT.md.tpl`, sinon le premier dossier parent qui le contient
+   (dans l'app HyperFrames, la conversation est ouverte dans l'accueil ou dans un Reel,
+   deux sous-dossiers de MAISON). VÉRIFIE que MAISON contient aussi `tools/`,
+   `.claude/skills/`, et `brand.config.json` ou `brand.config.example.json`. Sinon,
+   ARRÊTE-TOI et dis-moi d'ouvrir mon agent dans mon dossier Monteur IA. Tous les chemins
+   des étapes suivantes partent de MAISON, jamais d'un Reel ni de l'accueil.
 
-2. COPIE dans ce dossier, depuis le dossier de l'extension (étapes idempotentes : si un
+2. COPIE dans MAISON, depuis le dossier de l'extension (étapes idempotentes : si un
    fichier identique est déjà là, ne le copie pas deux fois ; s'il existe en version
    différente, remplace-le) :
    a) `.claude/skills/double-ia/` et `.claude/skills/setup-double-ia/`
@@ -65,14 +68,14 @@ Installe l'extension étape par étape, sans jamais rien casser. Suis ces règle
       nouvelle version de l'extension met ses consignes à jour, jamais en double.
    d) GITIGNORE : si `.gitignore` ne contient pas `double-ia.config.json`, ajoute une
       ligne `double-ia.config.json` (ce fichier contiendra les identifiants du double
-      de l'utilisateur — il reste local).
+      de l'utilisateur ; il reste local).
 
 3. VÉRIFIE ffmpeg et Python : `ffmpeg -version` et `python3 --version` (déjà là si
    Monteur IA fonctionne).
 
-4. Lance `npm run sync` à la racine (il régénère CLAUDE.md / AGENTS.md avec
-   l'aiguillage du double, et duplique les nouveaux skills pour Codex dans
-   `.agents/skills/`).
+4. Lance `node "<MAISON>/scripts/sync.mjs"` (c'est `npm run sync` : il régénère CLAUDE.md /
+   AGENTS.md avec l'aiguillage du double, duplique les nouveaux skills pour Codex dans
+   `.agents/skills/` et, en Monteur IA 2, met à jour l'accueil et les outils de chaque Reel).
 
 5. Termine en me disant : « Extension installée. Dis-moi "setup double IA" et je te
    guide de zéro : compte HeyGen gratuit, ta clé, ton double, ta première vidéo. »
@@ -90,4 +93,4 @@ Dis simplement à ton agent :
 
 Il te guide pas à pas : compte HeyGen gratuit (aucun abonnement à prendre), ta clé API,
 quelques euros de crédit, ta vidéo d'entraînement de 30 secondes, et ta première
-génération. Compte 20 minutes la première fois — ensuite, c'est configuré pour de bon.
+génération. Compte 20 minutes la première fois ; ensuite, c'est configuré pour de bon.

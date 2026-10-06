@@ -16,8 +16,11 @@ description: >-
 > « dis-moi quand c'est fait ». Tu vérifies toi-même que c'est fait (via `check`) avant
 > de passer à la suite. Ne saute jamais d'étape, ne fais jamais deux étapes d'un coup.
 
+**Où :** `double-ia.config.json` vit dans le dossier Monteur IA. Les commandes `tools/double_ia.py`
+se lancent depuis ce dossier ou depuis un Reel (depuis l'accueil de l'app : `../tools/double_ia.py`).
+
 Philosophie à annoncer d'entrée : « On configure HeyGen une seule fois. Ensuite tout se
-passe ici : tu me donnes un audio, je te rends la vidéo. Pas d'abonnement HeyGen — tu
+passe ici : tu me donnes un audio, je te rends la vidéo. Pas d'abonnement HeyGen : tu
 paies uniquement ce que tu génères, environ 2 $ pour un reel de 30 secondes. »
 
 ## Reprise
@@ -37,7 +40,7 @@ gratuit suffit, tout passera par l'API. « Dis-moi quand ton compte est créé. 
 ## Étape 2 — Clé API (interface, ~2 min)
 
 Envoie-le sur https://app.heygen.com/home?nav=API (« Espace API » / « API dashboard »)
-générer sa clé. Explique en une phrase : « cette clé, c'est ton badge d'accès — elle a
+générer sa clé. Explique en une phrase : « cette clé, c'est ton badge d'accès : elle a
 son propre portefeuille, séparé du compte gratuit ». Demande-lui de te coller la clé,
 puis écris-la dans `~/.heygen/credentials` (fichier texte contenant juste la clé,
 `chmod 600`). Vérifie aussitôt : `python3 tools/double_ia.py check` doit afficher le
@@ -80,7 +83,7 @@ python3 tools/double_ia.py create <video> --name "Double de <prénom>"
 ```
 
 Explique pendant l'attente : « HeyGen apprend ton visage et tes mouvements. Il clone
-aussi ta voix au passage — on ne s'en servira pas : notre méthode utilise TA vraie voix,
+aussi ta voix au passage, mais on ne s'en servira pas : notre méthode utilise TA vraie voix,
 c'est ce qui rend le résultat indétectable. »
 
 ## Étape 6 — Consentement (webcam, ~2 min)
@@ -90,7 +93,7 @@ python3 tools/double_ia.py consent
 ```
 
 Donne-lui le lien et explique : « HeyGen te demande de confirmer face caméra que c'est
-bien toi et que tu es d'accord — 10 secondes à la webcam en lisant la phrase affichée.
+bien toi et que tu es d'accord (10 secondes à la webcam en lisant la phrase affichée).
 C'est une protection : personne ne peut cloner quelqu'un d'autre. » Le lien vaut 24 h.
 Quand il a fini : `check` jusqu'à « consentement accepted » (l'entraînement du double
 peut prendre quelques minutes de plus — patiente avec lui).
