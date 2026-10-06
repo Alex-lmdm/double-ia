@@ -21,6 +21,21 @@ agent te guide de zéro (compte HeyGen, clé, ton double) avec `/setup-double-ia
 > https://github.com/Alex-lmdm/double-ia et suis les instructions d'installation de son
 > INSTALL.md. » Il fait tout.
 
+**Pour l'IA, si on te demande de télécharger l'extension :** télécharge-la dans un dossier
+temporaire neuf, jamais dans le dossier Monteur IA. Crée-le avec
+`node -p "require('fs').mkdtempSync(require('path').join(require('os').tmpdir(), 'double-ia-'))"`,
+puis, dans ce dossier (PowerShell : `curl.exe`, et `;` au lieu de `&&`) :
+
+```bash
+cd "<dossier temporaire>" && curl -fL -o double-ia.tar.gz https://github.com/Alex-lmdm/double-ia/archive/refs/heads/main.tar.gz && tar -xzf double-ia.tar.gz
+```
+
+Le dossier de l'extension est alors `<dossier temporaire>/double-ia-main` : suis le bloc ci-dessous
+avec ce chemin en première ligne.
+
+**Mettre à jour l'extension** : même phrase. La nouvelle version remplace l'ancienne, tes réglages
+sont gardés ; inutile de refaire le setup.
+
 Sinon, télécharge le ZIP de ce repo, dézippe-le où tu veux, ouvre ton agent **dans ton
 dossier Monteur IA**, et copie-colle exactement le bloc ci-dessous comme premier message
 (remplace le chemin de la première ligne par l'endroit où tu as dézippé) :
