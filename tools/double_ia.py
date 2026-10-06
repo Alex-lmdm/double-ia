@@ -89,7 +89,7 @@ def api_key():
         return k.strip()
     cred = pathlib.Path.home() / ".heygen/credentials"
     if cred.exists():
-        raw = cred.read_text().strip()
+        raw = cred.read_text(encoding="utf-8").strip()
         if raw:
             return json.loads(raw).get("api_key") if raw.startswith("{") else raw
     sys.exit("Pas de clé HeyGen. Colle ta clé dans ~/.heygen/credentials (fichier texte, "
@@ -121,11 +121,11 @@ def req(path, method="GET", body=None, files=None):
 
 
 def config():
-    return json.loads(CONFIG.read_text()) if CONFIG.exists() else {}
+    return json.loads(CONFIG.read_text(encoding="utf-8")) if CONFIG.exists() else {}
 
 
 def save_config(c):
-    CONFIG.write_text(json.dumps(c, indent=2, ensure_ascii=False) + "\n")
+    CONFIG.write_text(json.dumps(c, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def balance():
@@ -136,7 +136,7 @@ def duration(path):
     return float(subprocess.run(
         [ffbin("ffprobe"), "-v", "error", "-show_entries", "format=duration",
          "-of", "default=nw=1:nk=1", str(path)],
-        capture_output=True, text=True, check=True).stdout.strip())
+        capture_output=True, encoding="utf-8", errors="replace", check=True).stdout.strip())
 
 
 def cmd_check(_):
