@@ -22,7 +22,7 @@ agent te guide de zéro (compte HeyGen, clé, ton double) avec `/setup-double-ia
 > INSTALL.md. » Il fait tout.
 
 **Pour l'IA, si on te demande de télécharger l'extension :** télécharge-la dans un dossier
-temporaire neuf, jamais dans le dossier Monteur IA. Crée-le avec
+temporaire (celui de la mise à jour de Monteur IA convient), jamais dans le dossier Monteur IA. Crée-le avec
 `node -p "require('fs').mkdtempSync(require('path').join(require('os').tmpdir(), 'double-ia-'))"`,
 puis, dans ce dossier (PowerShell : `curl.exe`, et `;` au lieu de `&&`) :
 
