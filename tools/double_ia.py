@@ -16,8 +16,8 @@ le nettoyer après sans casser le lip sync).
 le montage enchaîne à l'identique) et, si `derush/<slug>_audio_timeline.json` existe (produit
 par build_audio_cut.py), le `derush/<slug>_cuts.json` que le montage exige.
 
-La config du double vit dans `double-ia.config.json` à la racine du projet (écrite par
-`create`). La clé API vient de $HEYGEN_API_KEY, sinon de ~/.heygen/credentials.
+La config du double vit dans `double-ia.config.json` à la racine du dossier Monteur IA (écrite
+par `create`), partagée par tous les Reels ; le dérush s'écrit dans le dossier du Reel. La clé API vient de $HEYGEN_API_KEY, sinon de ~/.heygen/credentials.
 
 Moteur par défaut : Avatar IV (mouvements les plus naturels). Avatar V dispo via
 --engine avatar_v (image un peu plus nette, même prix). Avatar III volontairement
@@ -42,12 +42,24 @@ import time
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-CONFIG = ROOT / "double-ia.config.json"
+try:  # Monteur IA 2 : un Reel = un projet (reels/<nom>/), réglages dans le dossier Monteur IA
+    from lieux import MAISON, REEL
+except ImportError:  # Monteur IA 1 : tout vit à la racine du projet
+    MAISON = REEL = ROOT
+
+
+def dossier_reel():
+    """Le Reel où écrire le dérush ; depuis la racine de Monteur IA 2, on demande d'en créer un."""
+    if REEL is None:
+        sys.exit("Lance cette commande depuis le dossier du Reel (reels/<nom>/). Pas encore de Reel : "
+                 "python3 tools/nouveau_reel.py \"<sujet>\", puis entre dans son dossier.")
+    return REEL
+CONFIG = MAISON / "double-ia.config.json"
 
 
 def brand_config():
     for name in ("brand.config.json", "brand.config.example.json"):
-        p = ROOT / name
+        p = MAISON / name
         if p.exists():
             return json.loads(p.read_text(encoding="utf-8"))
     return {}
@@ -184,9 +196,10 @@ def cmd_generate(a):
         sys.exit("Pas de double configuré : lance /setup-double-ia (ou `create <video>`).")
     engine = a.engine or c.get("engine", "avatar_iv")
     slug = a.slug or slug_of(audio)
-    out = pathlib.Path(a.out) if a.out else ROOT / "derush" / f"{slug}_enhanced.mp4"
+    reel = dossier_reel()
+    out = pathlib.Path(a.out) if a.out else reel / "derush" / f"{slug}_enhanced.mp4"
     out.parent.mkdir(parents=True, exist_ok=True)
-    timeline_path = ROOT / "derush" / f"{slug}_audio_timeline.json"
+    timeline_path = reel / "derush" / f"{slug}_audio_timeline.json"
     if "_voice." in audio.name and "enhanced" not in audio.name and not a.allow_raw:
         sys.exit(f"{audio.name} est le cut NON nettoyé. Nettoie-le d'abord avec Adobe Podcast "
                  f"Enhance (skill double-ia, étape 3) → derush/{slug}_voice_enhanced.mp3, puis génère sur "

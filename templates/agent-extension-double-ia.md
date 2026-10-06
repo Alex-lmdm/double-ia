@@ -2,30 +2,16 @@
 
 ## 🎭 Extension installée : Ton Double IA
 
-Ce projet sait AUSSI générer la vidéo face-cam de l'utilisateur **sans qu'il se filme** :
-il fournit un **audio** de sa vraie voix (lu au dictaphone), son double HeyGen fait l'image,
-et le montage reprend ensuite le pipeline Reel habituel à l'identique. La voix n'est
-**jamais** clonée.
+Une vidéo face caméra **sans se filmer** : l'utilisateur fournit un **audio** de sa vraie voix, son
+double HeyGen fait l'image, puis le montage Reel habituel reprend à l'identique (voix jamais clonée).
 
-Réponds dans la langue de l'utilisateur et reconnais aussi les demandes en espagnol.
-Les exemples français ci-dessous sont illustratifs. Garde les noms techniques inchangés
-et transcris l'audio dans sa langue réelle, sans traduction implicite.
-
-| L'utilisateur dit… | Route |
-|---|---|
-| un **audio** + « utilise mon double », « génère avec mon avatar », « utiliza mi doble » | charge le skill **`double-ia`** (remplace les étapes 2 tournage + 3 dérush) |
-| une **vidéo** de lui (« voici la vidéo brute ») | **pipeline normal**, `derush` puis `motion-design` : l'extension ne s'active pas |
-| `/setup-double-ia`, « crée mon double », « configure HeyGen », « configura mi doble », ou `double-ia.config.json` absent | charge le skill **`setup-double-ia`** |
-| « écris le script d'abord » puis lecture au dictaphone | `reel-script`, PUIS `double-ia` avec l'audio |
-
-**Ordre verrouillé quand un audio arrive** (le détail vit dans `double-ia`) :
-**1. dérush de l'audio** (`tools/build_audio_cut.py` : blancs, faux départs, phrases reprises →
-on garde la dernière tentative complète) → **2. l'utilisateur valide à l'oreille** →
-**3. nettoyage audio avec Adobe Podcast Enhance** (toujours, aucune autre méthode) → **4. génération** (`tools/double_ia.py
-generate` sur le fichier nettoyé, ⛔ **jamais sans accord explicite sur le coût**, ~2 $ le
-reel de 30 s) → **5. montage normal** à partir de `derush/<slug>_enhanced.mp4` +
-`<slug>_cuts.json`, les mêmes livrables qu'un dérush filmé. On ne génère jamais le brut
-(facturé à la seconde) et on ne nettoie jamais après la génération (l'audio envoyé est la
-piste son finale, la retoucher casserait le lip sync).
+- Audio + « utilise mon double », « génère avec mon avatar », « utiliza mi doble » → skill
+  **`double-ia`** (remplace tournage + dérush), dans le dossier du Reel (le créer d'abord avec
+  `python3 tools/nouveau_reel.py "<sujet>"` si besoin).
+- Vidéo filmée → pipeline normal : l'extension ne s'active pas.
+- « crée mon double », « configura mi doble », `/setup-double-ia`, ou `double-ia.config.json` absent
+  du dossier Monteur IA → skill **`setup-double-ia`**.
+- ⛔ Ordre verrouillé : dérush de l'audio, validation à l'oreille, nettoyage, puis génération,
+  **jamais sans accord explicite sur le coût** (environ 2 $ le Reel de 30 s).
 
 <!-- END EXTENSION: double-ia -->

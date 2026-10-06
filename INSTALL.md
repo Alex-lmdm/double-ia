@@ -45,7 +45,9 @@ Installe l'extension étape par étape, sans jamais rien casser. Suis ces règle
       « BEGIN EXTENSION: double-ia », ajoute le contenu INTÉGRAL du fichier
       `templates/agent-extension-double-ia.md` de l'extension À LA FIN de
       `templates/AGENT.md.tpl` (sans le modifier). S'il contient déjà le marqueur,
-      ne touche à rien.
+      REMPLACE tout le bloc, de « BEGIN EXTENSION: double-ia » à « END EXTENSION:
+      double-ia » (marqueurs compris), par ce même fichier : c'est ainsi qu'une
+      nouvelle version de l'extension met ses consignes à jour, jamais en double.
    d) GITIGNORE : si `.gitignore` ne contient pas `double-ia.config.json`, ajoute une
       ligne `double-ia.config.json` (ce fichier contiendra les identifiants du double
       de l'utilisateur — il reste local).

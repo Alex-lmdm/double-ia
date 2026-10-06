@@ -31,12 +31,24 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+try:  # Monteur IA 2 : un Reel = un projet (reels/<nom>/), réglages dans le dossier Monteur IA
+    from lieux import MAISON, REEL
+except ImportError:  # Monteur IA 1 : tout vit à la racine du projet
+    MAISON = REEL = ROOT
+
+
+def dossier_reel():
+    """Le Reel où écrire le dérush ; depuis la racine de Monteur IA 2, on demande d'en créer un."""
+    if REEL is None:
+        sys.exit("Lance cette commande depuis le dossier du Reel (reels/<nom>/). Pas encore de Reel : "
+                 "python3 tools/nouveau_reel.py \"<sujet>\", puis entre dans son dossier.")
+    return REEL
 GAPS = {"sentence": 0.10, "link": 0.05, "breath": 0.15, "none": 0.0}
 
 
 def brand_config():
     for name in ("brand.config.json", "brand.config.example.json"):
-        p = ROOT / name
+        p = MAISON / name
         if p.exists():
             return json.loads(p.read_text(encoding="utf-8"))
     return {}
@@ -75,7 +87,7 @@ def main():
     if pad_start < 0:
         sys.exit("derush.padStart doit rester positif (attaques de voyelle fragiles).")
 
-    out_dir = ROOT / "derush"
+    out_dir = dossier_reel() / "derush"
     out_dir.mkdir(exist_ok=True)
     out = out_dir / f"{a.slug}_voice.mp3"
 
