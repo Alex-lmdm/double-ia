@@ -12,7 +12,7 @@ description: >-
   router vers `setup-double-ia`. JAMAIS de génération sans confirmation explicite du coût.
 ---
 
-# Double IA — audio → vidéo face-cam → montage
+# Double IA : audio → vidéo face-cam → montage
 
 L'utilisateur a un double HeyGen (configuré par `/setup-double-ia`, config dans
 `double-ia.config.json`). Il écrit son script (ou tu l'écris avec lui via `reel-script`), le lit
@@ -60,7 +60,7 @@ remplacer la piste sur laquelle le lip sync a été calculé (désynchro). Et ne
 le cut plutôt qu'avant : le nettoyage uniformise le fond sonore sur l'ensemble, ce qui
 masque les jump-cuts au lieu de les souligner.
 
-## Étape 1 — Dérusher l'audio
+## Étape 1 : dérusher l'audio
 
 Même méthode que le skill `derush`, mais sur l'audio seul (pas de vidéo, donc pas de
 détection de changement de plan). Outils et modèle Whisper : `brand.config.json` → `env`
@@ -98,14 +98,14 @@ python3 tools/build_audio_cut.py "<audio brut>" --segments derush/<slug>_segment
 6. Vérifier : re-transcrire le cut (lecture = script, zéro doublon, zéro mot coupé) et mesurer
    les souffles (`silencedetect=noise=-40dB:d=0.05` → moyenne ≈ 0,10 s, max < 0,21 s).
 
-## Étape 2 — Faire valider à l'oreille
+## Étape 2 : faire valider à l'oreille
 
 Révèle le MP3 (`open -R derush/<slug>_voice.mp3` sur macOS, `explorer /select,…` sur
 Windows) et demande à l'utilisateur de l'écouter. **Rien ne part sur HeyGen avant son OK.**
 S'il entend un doublon ou un mot coupé : zoom mot-à-mot sur la zone, corriger le segment,
 rebuild, re-vérifier.
 
-## Étape 3 — Nettoyer l'audio (toujours, pas seulement « si ça grésille »)
+## Étape 3 : nettoyer l'audio (toujours, pas seulement « si ça grésille »)
 
 Une seule méthode, **toujours la même** : Adobe Podcast Enhance (gratuit, compte Adobe). Ne
 propose jamais d'alternative (pas de filtre ffmpeg, pas de « je le fais moi-même »). C'est le
@@ -124,7 +124,7 @@ même geste que le skill `derush` §7 :
 **Vérifier que la durée est identique** au cut (`ffprobe … format=duration`, écart < 0,1 s)
 avant de générer. **C'est ce fichier nettoyé, et lui seul, qui part en génération.**
 
-## Étape 4 — Générer
+## Étape 4 : générer
 
 ```bash
 python3 tools/double_ia.py generate derush/<slug>_voice_enhanced.mp3
@@ -141,7 +141,7 @@ saute pas à l'image, pas de scene-change à mesurer). Limites : 10 min / 50 Mo.
 `--engine avatar_v` seulement si l'utilisateur le demande (image un peu plus nette, même
 prix, mouvements moins naturels). Ne propose jamais Avatar III.
 
-## Étape 5 — Vérifier avant de montrer
+## Étape 5 : vérifier avant de montrer
 
 1. Extraire 3-4 frames + un zoom visage : pas d'artefact, mains correctes.
 2. Contrôler le lip sync sur un passage rapide (mots en b/p/m).
@@ -150,7 +150,7 @@ prix, mouvements moins naturels). Ne propose jamais Avatar III.
 Un mot mal prononcé ne se corrige pas côté HeyGen : l'utilisateur réenregistre la phrase,
 tu la recolles dans les segments, rebuild du cut, re-nettoyage, regénération après accord.
 
-## Étape 6 — Enchaîner sur le montage normal
+## Étape 6 : enchaîner sur le montage normal
 
 Produire `derush/<slug>_words.json` avec `tools/build_words.py` (pointer `CUT` sur
 `derush/<slug>_enhanced.mp4` et `tools/sections.py` → `CUTS_PATH` sur `<slug>_cuts.json`),

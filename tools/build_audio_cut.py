@@ -13,7 +13,7 @@ Entrée : `derush/<slug>_segments.json`, écrit par l'agent après sélection de
     [ {"start": 1.08, "end": 4.31, "text": "Première phrase"},
       {"start": 9.66, "end": 13.60, "text": "Deuxième phrase", "gap": "sentence"}, ... ]
   - `start` / `end` : bornes de l'îlot de parole gardé, dans l'AUDIO BRUT (secondes).
-  - `gap` (optionnel) : souffle inséré AVANT ce segment — "sentence" (défaut, 0,10 s),
+  - `gap` (optionnel) : souffle inséré AVANT ce segment, "sentence" (défaut, 0,10 s),
     "link" (liaison intra-phrase, 0,05 s), "breath" (respiration conservée, 0,15 s), "none".
 
 Sorties (dans derush/) :
@@ -148,8 +148,8 @@ def main():
                                    "padStart": pad_start, "padEnd": pad_end,
                                    "takes": timeline}, ensure_ascii=False, indent=2) + "\n",
                        encoding="utf-8")
-    print(f"{out.relative_to(ROOT)}  —  {cursor:.2f} s  ({len(segs)} prises)")
-    print(f"{tl_path.relative_to(ROOT)}  —  bornes des prises sur le cut")
+    print(f"{out.relative_to(ROOT)} : {cursor:.2f} s ({len(segs)} prises)")
+    print(f"{tl_path.relative_to(ROOT)} : bornes des prises sur le cut")
     print("Prochaine étape : fais écouter le MP3 pour validation, PUIS nettoyage audio, PUIS génération.")
 
 

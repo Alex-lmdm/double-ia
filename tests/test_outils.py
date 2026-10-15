@@ -132,6 +132,16 @@ class MargesDuDerush(unittest.TestCase):
             self.assertEqual([(x["start"], x["end"]) for x in tl["takes"]], [(0.0, 0.5), (0.5, 1.0)])
 
 
+class SansTiretLong(unittest.TestCase):
+    """Rien de ce qui est livré (outils, skills, consignes, README, INSTALL) ne contient de tiret long."""
+
+    def test_fichiers_livres(self):
+        livres = [*OUTILS.glob("*.py"), *(DEPOT / ".claude" / "skills").rglob("*.*"),
+                  *(DEPOT / "templates").glob("*.md"), DEPOT / "README.md", DEPOT / "INSTALL.md"]
+        fautifs = [f"{p.relative_to(DEPOT)}:{n}" for p in livres if p.is_file()
+                   for n, ligne in enumerate(p.read_text(encoding="utf-8").splitlines(), 1) if "\u2014" in ligne]
+        self.assertEqual(fautifs, [])
+
 
 if __name__ == "__main__":
     unittest.main()

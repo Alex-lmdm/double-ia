@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ton Double IA — pilote HeyGen pour le Monteur IA. Tout par API, zéro abonnement.
+"""Ton Double IA : pilote HeyGen pour le Monteur IA. Tout par API, zéro abonnement.
 
 Sous-commandes :
     python3 tools/double_ia.py check              # clé, solde, état du double
@@ -90,7 +90,7 @@ def slug_of(audio):
     return re.sub(r"(_voice)?(_enhanced|_clean|_optimis[ée](-v\d+)?)*$", "", audio.stem) or audio.stem
 BASE = "https://api.heygen.com"
 FPS = "30000/1001"
-RATE_PER_SEC = 0.073  # $/s constaté (tarif affiché 0,0667 — HeyGen arrondit au-dessus)
+RATE_PER_SEC = 0.073  # $/s constaté (tarif affiché 0,0667, HeyGen arrondit au-dessus)
 
 
 def api_key():
@@ -158,7 +158,7 @@ def cmd_check(_):
         print("Double    : pas encore créé → `create <video>` (ou lance /setup-double-ia)")
         return
     g = req(f"/v3/avatars/{c['avatar_group_id']}")
-    print(f"Double    : {g['name']} — entraînement {g['status']}, consentement "
+    print(f"Double    : {g['name']}, entraînement {g['status']}, consentement "
           f"{g.get('consent_status')}")
     if g.get("consent_status") != "accepted":
         print("→ consentement à faire : `python3 tools/double_ia.py consent`")
@@ -181,7 +181,7 @@ def cmd_create(a):
     save_config({"name": a.name, "avatar_id": item["id"], "avatar_group_id": group["id"],
                  "engine": "avatar_iv"})
     print(f"Double créé : look {item['id']} (groupe {group['id']}) → double-ia.config.json")
-    print("Prochaine étape : le consentement — `python3 tools/double_ia.py consent`")
+    print("Prochaine étape, le consentement : `python3 tools/double_ia.py consent`")
 
 
 def cmd_consent(_):
@@ -223,14 +223,14 @@ def cmd_generate(a):
     if dur > 600:
         sys.exit("Audio trop long : maximum 10 minutes par génération.")
     b = balance()
-    print(f"Audio     : {audio.name} — {dur:.1f} s")
+    print(f"Audio     : {audio.name} ({dur:.1f} s)")
     print(f"Moteur    : {engine}")
     print(f"Coût est. : ~{dur * RATE_PER_SEC:.2f} $  (solde {b:.2f} $)")
     if dur * RATE_PER_SEC > b:
         sys.exit("Solde insuffisant : recharge le portefeuille API sur app.heygen.com "
                  "(Espace API → Billing).")
     if not a.yes and input("Lancer la génération ? [o/N] ").strip().lower() not in ("o", "oui", "y"):
-        sys.exit("Annulé — rien n'a été débité.")
+        sys.exit("Annulé : rien n'a été débité.")
 
     asset = req("/v3/assets", "POST", files=(audio.name, audio.read_bytes()))
     vid = req("/v3/videos", "POST", {
@@ -263,10 +263,10 @@ def cmd_generate(a):
         rel = out.relative_to(ROOT)
     except ValueError:
         rel = out
-    print(f"\n{rel} — 1080x1920 @ 29,97 fps — {dur:.1f} s")
-    print(f"Coût réel : {spent:.2f} $ — solde restant {b - spent:.2f} $")
+    print(f"\n{rel} : 1080x1920 @ 29,97 fps, {dur:.1f} s")
+    print(f"Coût réel : {spent:.2f} $ (solde restant {b - spent:.2f} $)")
     cuts = write_cuts(slug, out, timeline_path if timeline_path.exists() else None)
-    print(f"{cuts.relative_to(ROOT)} — frontières des prises pour le montage "
+    print(f"{cuts.relative_to(ROOT)} : frontières des prises pour le montage "
           f"(tools/sections.py → CUTS_PATH)")
 
 
