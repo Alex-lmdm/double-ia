@@ -9,8 +9,9 @@ double HeyGen fait l'image, puis le montage Reel habituel reprend à l'identique
   **`double-ia`** (remplace tournage + dérush), dans le dossier du Reel (le créer d'abord si besoin,
   comme une vidéo filmée : `nouveau_reel.py` du dossier Monteur IA).
 - Vidéo filmée → pipeline normal : l'extension ne s'active pas.
-- « crée mon double », « configura mi doble », `/setup-double-ia`, ou `double-ia.config.json` absent
-  du dossier Monteur IA → skill **`setup-double-ia`**.
+- « crée mon double », « j'ai déjà un double HeyGen », « configura mi doble », `/setup-double-ia`, ou
+  `double-ia.config.json` absent du dossier Monteur IA → skill **`setup-double-ia`** (un double existant
+  se relie sans rien recréer ni payer : `double_ia.py lier`).
 - ⛔ Ordre verrouillé : dérush de l'audio, validation à l'oreille, nettoyage, puis génération,
   **jamais sans accord explicite sur le coût** (environ 2 $ le Reel de 30 s).
 

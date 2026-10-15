@@ -6,7 +6,9 @@ et le bloc de consignes, jamais tests/).
 Sans dépendance : bibliothèque standard seulement. Rien n'est écrit dans le dépôt (dossiers
 temporaires), aucun appel à HeyGen.
 """
+import contextlib
 import importlib
+import io
 import json
 import os
 import pathlib
@@ -15,6 +17,8 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import urllib.error
+from unittest import mock
 
 DEPOT = pathlib.Path(__file__).resolve().parents[1]
 OUTILS = DEPOT / "tools"
@@ -130,6 +134,144 @@ class MargesDuDerush(unittest.TestCase):
             tl = json.loads((maison / "derush" / "essai_audio_timeline.json").read_text(encoding="utf-8"))
             self.assertEqual((tl["padStart"], tl["padEnd"], tl["duration"]), (0.0, 0.0, 1.0))
             self.assertEqual([(x["start"], x["end"]) for x in tl["takes"]], [(0.0, 0.5), (0.5, 1.0)])
+
+
+LOOK = {"id": "look1", "name": "Bureau", "avatar_type": "digital_twin", "group_id": "grp1", "status": "completed",
+        "supported_api_engines": ["avatar_v", "avatar_iv", "avatar_iii"]}
+GROUPE = {"id": "grp1", "name": "Double de Léa", "status": "completed", "consent_status": "accepted"}
+LISTE = "/v3/avatars/looks?ownership=private&avatar_type=digital_twin&limit=50"
+
+
+class FauxHeyGen:
+    """L'API HeyGen simulée : un chemin connu rend son `data`, un inconnu un HTTP 404."""
+
+    def __init__(self, routes):
+        self.routes, self.appels = routes, []
+
+    def __call__(self, requete, *args, **kwargs):
+        self.appels.append((requete.get_method(), requete.full_url))
+        chemin = requete.full_url.split("api.heygen.com", 1)[1]
+        if chemin not in self.routes:
+            raise urllib.error.HTTPError(requete.full_url, 404, "Not Found", {}, io.BytesIO(b'{"error": "not found"}'))
+        return io.BytesIO(json.dumps({"data": self.routes[chemin]}).encode("utf-8"))
+
+
+class LierUnDoubleExistant(unittest.TestCase):
+    """`lier` : un double déjà créé sur HeyGen se relie au Monteur IA, ids vérifiés en lecture seule
+    (aucune génération, rien de débité), ou écrits hors ligne sans clé, avec un avertissement."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.maison = pathlib.Path(self.tmp.name) / "Monteur IA"
+        self.maison.mkdir()
+        self.m = charger("double_ia")
+        self.m.MAISON = self.maison
+        self.m.CONFIG = self.maison / "double-ia.config.json"
+        self.m.CREDENTIALS = pathlib.Path(self.tmp.name) / "pas-de-cle" / "credentials"
+        self.cle = mock.patch.dict(os.environ, {"HEYGEN_API_KEY": "cle-de-test"})
+        self.cle.start()
+
+    def tearDown(self):
+        self.cle.stop()
+        self.tmp.cleanup()
+
+    def lancer(self, *args, routes=None):
+        faux = FauxHeyGen({"/v3/avatars/looks/look1": LOOK, "/v3/avatars/grp1": GROUPE} if routes is None else routes)
+        sortie = io.StringIO()
+        with mock.patch.object(self.m.urllib.request, "urlopen", faux), \
+                mock.patch.object(sys, "argv", ["double_ia.py", *args]), contextlib.redirect_stdout(sortie):
+            try:
+                self.m.main()
+                code = 0
+            except SystemExit as e:
+                code = e.code or 0
+        self.assertTrue(all(methode == "GET" for methode, _ in faux.appels), faux.appels)
+        return code, sortie.getvalue() + (code if isinstance(code, str) else "")
+
+    def config(self):
+        return json.loads(self.m.CONFIG.read_text(encoding="utf-8")) if self.m.CONFIG.exists() else None
+
+    def test_lier_verifie_et_ecrit_la_config(self):
+        code, sortie = self.lancer("lier", "--avatar-id", "look1")
+        self.assertEqual(code, 0, sortie)
+        self.assertEqual(self.config(), {"name": "Double de Léa", "avatar_id": "look1", "avatar_group_id": "grp1",
+                                         "engine": "avatar_iv"})
+        self.assertIn("Rien n'a été généré ni débité", sortie)
+        self.assertIn("prêt à générer", sortie)
+
+    def test_id_du_groupe_au_lieu_du_look(self):
+        routes = {"/v3/avatars/grp1": GROUPE, "/v3/avatars/looks?group_id=grp1&ownership=private&limit=50": [LOOK]}
+        code, sortie = self.lancer("lier", "--avatar-id", "grp1", "--nom", "Léa bureau", routes=routes)
+        self.assertEqual(code, 0, sortie)
+        self.assertEqual(self.config(), {"name": "Léa bureau", "avatar_id": "look1", "avatar_group_id": "grp1",
+                                         "engine": "avatar_iv"})
+        # Plusieurs looks : on les montre et on demande lequel, sans rien écrire.
+        self.m.CONFIG.unlink()
+        routes["/v3/avatars/looks?group_id=grp1&ownership=private&limit=50"] = [LOOK, {**LOOK, "id": "look2", "name": "Salon"}]
+        code, sortie = self.lancer("lier", "--avatar-id", "grp1", routes=routes)
+        self.assertNotEqual(code, 0)
+        self.assertIn("--avatar-id look2", sortie)
+        self.assertIsNone(self.config())
+
+    def test_ids_refuses(self):
+        code, sortie = self.lancer("lier", "--avatar-id", "inconnu")
+        self.assertNotEqual(code, 0)
+        self.assertIn("Aucun look « inconnu »", sortie)
+        code, sortie = self.lancer("lier", "--avatar-id", "look1", "--group-id", "autre")
+        self.assertNotEqual(code, 0)
+        self.assertIn("appartient au groupe grp1", sortie)
+        code, sortie = self.lancer("lier", "--avatar-id", "look1", routes={
+            "/v3/avatars/looks/look1": {**LOOK, "status": "failed", "error": {"code": "x", "message": "vidéo coupée"}},
+            "/v3/avatars/grp1": GROUPE})
+        self.assertNotEqual(code, 0)
+        self.assertIn("vidéo coupée", sortie)
+        self.assertIsNone(self.config(), "rien n'est écrit quand les ids sont refusés")
+
+    def test_moteurs_et_consentement(self):
+        code, sortie = self.lancer("lier", "--avatar-id", "look1", routes={
+            "/v3/avatars/looks/look1": {**LOOK, "supported_api_engines": ["avatar_v"]},
+            "/v3/avatars/grp1": {**GROUPE, "consent_status": "pending"}})
+        self.assertEqual(code, 0, sortie)
+        self.assertEqual(self.config()["engine"], "avatar_v")
+        self.assertIn("double_ia.py consent", sortie)
+        self.m.CONFIG.unlink()
+        code, sortie = self.lancer("lier", "--avatar-id", "look1", routes={
+            "/v3/avatars/looks/look1": {**LOOK, "supported_api_engines": ["avatar_iii"]}, "/v3/avatars/grp1": GROUPE})
+        self.assertNotEqual(code, 0)
+        self.assertIsNone(self.config())
+
+    def test_double_deja_configure(self):
+        avant = {"name": "Ancien", "avatar_id": "vieux", "avatar_group_id": "gv", "engine": "avatar_iv"}
+        self.m.CONFIG.write_text(json.dumps(avant), encoding="utf-8")
+        code, sortie = self.lancer("lier", "--avatar-id", "look1")
+        self.assertNotEqual(code, 0)
+        self.assertIn("--force", sortie)
+        self.assertIn("vieux", sortie, "les ids actuels sont donnés pour revenir en arrière")
+        self.assertEqual(self.config(), avant)
+        code, sortie = self.lancer("lier", "--avatar-id", "look1", "--force")
+        self.assertEqual(code, 0, sortie)
+        self.assertEqual(self.config()["avatar_id"], "look1")
+
+    def test_lister_ses_doubles(self):
+        routes = {LISTE: [LOOK, {"id": "pub", "name": "Studio", "avatar_type": "studio_avatar"}]}
+        code, sortie = self.lancer("lier", routes=routes)
+        self.assertEqual(code, 0, sortie)
+        self.assertIn("--avatar-id look1", sortie)
+        self.assertNotIn("Studio", sortie)
+        self.assertIsNone(self.config())
+
+    def test_hors_ligne_puis_check(self):
+        with mock.patch.dict(os.environ, {"HEYGEN_API_KEY": ""}):
+            code, sortie = self.lancer("lier", "--avatar-id", "look1", routes={})
+        self.assertEqual(code, 0, sortie)
+        self.assertIn("SANS vérification", sortie)
+        self.assertEqual(self.config(), {"name": "Mon double", "avatar_id": "look1", "engine": "avatar_iv"})
+        # La clé posée, `check` lit le groupe sur HeyGen et complète la config.
+        code, sortie = self.lancer("check", routes={"/v3/users/me": {"wallet": {"remaining_balance": 12.5}},
+                                                    "/v3/avatars/looks/look1": LOOK, "/v3/avatars/grp1": GROUPE})
+        self.assertEqual(code, 0, sortie)
+        self.assertIn("Double de Léa", sortie)
+        self.assertEqual(self.config()["avatar_group_id"], "grp1")
 
 
 class SansTiretLong(unittest.TestCase):

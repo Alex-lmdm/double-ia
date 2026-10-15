@@ -4,6 +4,9 @@
 Sous-commandes :
     python3 tools/double_ia.py check              # clé, solde, état du double
     python3 tools/double_ia.py create <video>     # crée ton double depuis ta vidéo de 30 s
+    python3 tools/double_ia.py lier               # double déjà créé sur HeyGen : liste tes doubles
+    python3 tools/double_ia.py lier --avatar-id <look> [--group-id <groupe>] [--nom "…"]
+                                                  # … et le relie au Monteur IA (lecture seule, gratuit)
     python3 tools/double_ia.py consent            # lien webcam de consentement (10 s)
     python3 tools/double_ia.py generate <audio>   # audio de ta voix → vidéo de ton double
 
@@ -17,7 +20,7 @@ le montage enchaîne à l'identique) et, si `derush/<slug>_audio_timeline.json` 
 par build_audio_cut.py), le `derush/<slug>_cuts.json` que le montage exige.
 
 La config du double vit dans `double-ia.config.json` à la racine du dossier Monteur IA (écrite
-par `create`), partagée par tous les Reels ; le dérush s'écrit dans le dossier du Reel. La clé API vient de $HEYGEN_API_KEY, sinon de ~/.heygen/credentials.
+par `create`, ou par `lier` pour un double déjà créé sur HeyGen), partagée par tous les Reels ; le dérush s'écrit dans le dossier du Reel. La clé API vient de $HEYGEN_API_KEY, sinon de ~/.heygen/credentials.
 
 Moteur par défaut : Avatar IV (mouvements les plus naturels). Avatar V dispo via
 --engine avatar_v (image un peu plus nette, même prix). Avatar III volontairement
@@ -91,23 +94,28 @@ def slug_of(audio):
 BASE = "https://api.heygen.com"
 FPS = "30000/1001"
 RATE_PER_SEC = 0.073  # $/s constaté (tarif affiché 0,0667, HeyGen arrondit au-dessus)
+CREDENTIALS = pathlib.Path.home() / ".heygen" / "credentials"
+MOTEURS = ("avatar_iv", "avatar_v")   # Avatar III volontairement absent (il rejoue les coupes)
 
 
-def api_key():
+def api_key(obligatoire=True):
     k = os.environ.get("HEYGEN_API_KEY")
-    if k:
+    if k and k.strip():
         return k.strip()
-    cred = pathlib.Path.home() / ".heygen/credentials"
-    if cred.exists():
-        raw = cred.read_text(encoding="utf-8").strip()
+    if CREDENTIALS.exists():
+        raw = CREDENTIALS.read_text(encoding="utf-8").strip()
         if raw:
             return json.loads(raw).get("api_key") if raw.startswith("{") else raw
+    if not obligatoire:
+        return None
     sys.exit("Pas de clé HeyGen. Colle ta clé dans ~/.heygen/credentials (fichier texte, "
              "juste la clé) ou exporte $HEYGEN_API_KEY. Elle se crée sur "
              "https://app.heygen.com/home?nav=API")
 
 
-def req(path, method="GET", body=None, files=None):
+def req(path, method="GET", body=None, files=None, introuvable=False):
+    """Appel à l'API HeyGen ; rend son champ `data`. introuvable : un id inconnu (HTTP 400, 404 ou
+    422) rend None au lieu d'arrêter, pour l'expliquer à l'utilisateur."""
     headers = {"X-Api-Key": api_key()}
     if files:  # multipart minimal, zéro dépendance
         name, blob = files
@@ -126,8 +134,15 @@ def req(path, method="GET", body=None, files=None):
         with urllib.request.urlopen(r) as resp:
             return json.loads(resp.read())["data"]
     except urllib.error.HTTPError as e:
+        if introuvable and e.code in (400, 404, 422):
+            return None
         detail = e.read().decode(errors="replace")[:300]
+        if e.code in (401, 403):
+            sys.exit(f"HeyGen refuse la clé API (HTTP {e.code}) : vérifie ~/.heygen/credentials "
+                     f"(la clé se crée sur https://app.heygen.com/home?nav=API).\n{detail}")
         sys.exit(f"HeyGen a répondu HTTP {e.code} sur {method} {path} :\n{detail}")
+    except urllib.error.URLError as e:
+        sys.exit(f"HeyGen injoignable ({e.reason}) : vérifie la connexion internet, puis relance.")
 
 
 def config():
@@ -149,15 +164,32 @@ def duration(path):
         capture_output=True, encoding="utf-8", errors="replace", check=True).stdout.strip())
 
 
+def groupe_du_double(c):
+    """Le groupe HeyGen du double. Un double lié hors ligne n'a que son look : le groupe se lit
+    alors sur HeyGen et s'ajoute à la config."""
+    if c.get("avatar_group_id"):
+        return c["avatar_group_id"]
+    look = req(f"/v3/avatars/looks/{c['avatar_id']}", introuvable=True)
+    if not look:
+        sys.exit(f"Le look {c['avatar_id']} de double-ia.config.json est inconnu de ce compte HeyGen : "
+                 "relie ton double avec `python3 tools/double_ia.py lier` (il liste tes doubles).")
+    if not look.get("group_id"):
+        sys.exit("HeyGen ne donne pas le groupe de ce look : relance `lier` avec --group-id.")
+    c["avatar_group_id"] = look["group_id"]
+    save_config(c)
+    return c["avatar_group_id"]
+
+
 def cmd_check(_):
     b = balance()
     print(f"Clé API   : ok")
     print(f"Solde     : {b:.2f} $ (~{int(b / (RATE_PER_SEC * 30))} reels de 30 s)")
     c = config()
     if not c.get("avatar_id"):
-        print("Double    : pas encore créé → `create <video>` (ou lance /setup-double-ia)")
+        print("Double    : pas encore configuré → `create <video>`, ou `lier` s'il existe déjà sur "
+              "HeyGen (ou lance /setup-double-ia)")
         return
-    g = req(f"/v3/avatars/{c['avatar_group_id']}")
+    g = req(f"/v3/avatars/{groupe_du_double(c)}")
     print(f"Double    : {g['name']}, entraînement {g['status']}, consentement "
           f"{g.get('consent_status')}")
     if g.get("consent_status") != "accepted":
@@ -184,15 +216,122 @@ def cmd_create(a):
     print("Prochaine étape, le consentement : `python3 tools/double_ia.py consent`")
 
 
+def _ligne_look(l):
+    moteurs = ", ".join(e for e in l.get("supported_api_engines") or [] if e in MOTEURS) or "?"
+    return (f"  - {l.get('name') or '(sans nom)'} : --avatar-id {l['id']}  (groupe {l.get('group_id') or '?'}, "
+            f"{l.get('status') or 'état ?'}, moteurs {moteurs})")
+
+
+def lister_doubles():
+    """Les doubles (jumeaux numériques) du compte HeyGen, en lecture seule."""
+    looks = req("/v3/avatars/looks?ownership=private&avatar_type=digital_twin&limit=50") or []
+    looks = [l for l in looks if l.get("avatar_type", "digital_twin") == "digital_twin"]
+    if not looks:
+        sys.exit("Aucun double (jumeau numérique) sur ce compte HeyGen : on le crée avec /setup-double-ia "
+                 "(vidéo d'entraînement, puis `create`).")
+    print("Tes doubles sur HeyGen (un look = une tenue, un lieu ; c'est l'id du look qui génère) :")
+    for l in looks:
+        print(_ligne_look(l))
+    print("\nRelie celui que tu utilises : python3 tools/double_ia.py lier --avatar-id <id du look>")
+
+
+def cmd_lier(a):
+    """Relie au Monteur IA un double DÉJÀ créé sur HeyGen : vérifie les ids en lecture seule (aucune
+    génération, rien de débité) puis écrit double-ia.config.json, comme `create`."""
+    c = config()
+    cle = api_key(obligatoire=False)
+    if not (a.avatar_id or "").strip():
+        if not cle:
+            sys.exit("Donne l'id du look de ton double : `lier --avatar-id <id>`. Avec ta clé API dans "
+                     "~/.heygen/credentials, `lier` seul liste tes doubles.")
+        return lister_doubles()
+    look_id, groupe_id = a.avatar_id.strip(), (a.group_id or "").strip() or None
+    deja = c.get("avatar_id")
+    if deja and deja != look_id and not a.force:
+        sys.exit(f"Un autre double est déjà configuré : « {c.get('name')} », look {deja}, groupe "
+                 f"{c.get('avatar_group_id')}. Pour le remplacer : relance avec --force (note ces ids "
+                 "pour revenir en arrière).")
+    base = c if deja == look_id else {}
+    moteur = a.engine or base.get("engine") or "avatar_iv"
+    nom, consentement = a.nom, None
+    if cle:
+        groupe = None
+        look = req(f"/v3/avatars/looks/{look_id}", introuvable=True)
+        if look is None:
+            # Erreur courante : l'id copié est celui du groupe (l'avatar), pas celui de son look.
+            groupe = req(f"/v3/avatars/{look_id}", introuvable=True)
+            if groupe is None:
+                sys.exit(f"Aucun look « {look_id} » sur ce compte HeyGen (vérifie l'id, et la clé : celle "
+                         "du compte où vit le double). `lier` sans --avatar-id liste tes doubles.")
+            if groupe_id and groupe_id != look_id:
+                sys.exit(f"« {look_id} » est l'id d'un groupe, différent de --group-id {groupe_id}.")
+            looks = req(f"/v3/avatars/looks?group_id={look_id}&ownership=private&limit=50") or []
+            looks = [l for l in looks if l.get("group_id") in (None, look_id)]
+            if len(looks) != 1:
+                print(f"« {look_id} » est l'id du groupe « {groupe.get('name')} », pas d'un look. Ses looks :")
+                for l in looks:
+                    print(_ligne_look(l))
+                sys.exit("Relance avec --avatar-id <id du look> (celui de la tenue et du lieu de tes vidéos).")
+            look, groupe_id = looks[0], look_id
+            print(f"« {look_id} » est l'id du groupe « {groupe.get('name')} » : son look {look['id']} est pris.")
+            look_id = look["id"]
+        if groupe_id and look.get("group_id") and look["group_id"] != groupe_id:
+            sys.exit(f"Le look {look_id} appartient au groupe {look['group_id']}, pas à {groupe_id} : "
+                     "retire --group-id (il se lit sur HeyGen) ou corrige-le.")
+        groupe_id = groupe_id or look.get("group_id")
+        if not groupe_id:
+            sys.exit("HeyGen ne donne pas le groupe de ce look : relance avec --group-id <id du groupe>.")
+        groupe = groupe or req(f"/v3/avatars/{groupe_id}", introuvable=True)
+        if groupe is None:
+            sys.exit(f"Aucun groupe « {groupe_id} » sur ce compte HeyGen : vérifie --group-id.")
+        if look.get("status") == "failed":
+            erreur = (look.get("error") or {}).get("message") or "raison non précisée"
+            sys.exit(f"Ce double a échoué à l'entraînement sur HeyGen ({erreur}) : il ne peut pas générer. "
+                     "Recrée-le avec /setup-double-ia.")
+        if look.get("avatar_type") not in (None, "digital_twin"):
+            print(f"⚠️  Ce look est un « {look['avatar_type']} », pas un double filmé (digital_twin) : il "
+                  "générera, avec le rendu de ce look.")
+        moteurs = look.get("supported_api_engines") or []
+        if moteurs and moteur not in moteurs:
+            autre = next((m for m in MOTEURS if m in moteurs), None)
+            if not autre:
+                sys.exit(f"Ce look ne prend ni Avatar IV ni Avatar V (moteurs : {', '.join(moteurs)}) : "
+                         "Ton Double IA ne s'en sert pas (Avatar III rejoue les coupes de l'entraînement).")
+            print(f"Moteur {moteur} non pris en charge par ce look : {autre} à la place.")
+            moteur = autre
+        nom = nom or groupe.get("name") or look.get("name")
+        consentement = groupe.get("consent_status")
+        etat = look.get("status") or groupe.get("status")
+    else:
+        print("⚠️  Pas de clé HeyGen : ids écrits SANS vérification. Une fois la clé posée "
+              "(~/.heygen/credentials), `python3 tools/double_ia.py check` les vérifie.")
+        etat = None
+    nom = nom or base.get("name") or "Mon double"
+    nouveau = {**base, "name": nom, "avatar_id": look_id, "avatar_group_id": groupe_id, "engine": moteur}
+    if not groupe_id:
+        del nouveau["avatar_group_id"]
+    save_config(nouveau)
+    print(f"Double lié : « {nom} », look {look_id}" + (f" (groupe {groupe_id})" if groupe_id else "")
+          + f", moteur {moteur} → double-ia.config.json")
+    print("Rien n'a été généré ni débité.")
+    if etat == "processing":
+        print("HeyGen entraîne encore ce double : patiente quelques minutes, puis `check`.")
+    if cle and consentement != "accepted":
+        print("Prochaine étape, le consentement : `python3 tools/double_ia.py consent`")
+    elif cle:
+        print("Consentement déjà accepté : le double est prêt à générer.")
+
+
 def cmd_consent(_):
     c = config()
-    if not c.get("avatar_group_id"):
-        sys.exit("Pas de double configuré : lance d'abord `create <video>`.")
-    g = req(f"/v3/avatars/{c['avatar_group_id']}")
+    if not c.get("avatar_id"):
+        sys.exit("Pas de double configuré : lance d'abord `create <video>` (ou `lier` s'il existe déjà).")
+    groupe = groupe_du_double(c)
+    g = req(f"/v3/avatars/{groupe}")
     if g.get("consent_status") == "accepted":
         print("Consentement déjà accepté, tout est bon.")
         return
-    r = req(f"/v3/avatars/{c['avatar_group_id']}/consent", "POST", {})
+    r = req(f"/v3/avatars/{groupe}/consent", "POST", {})
     print("Ouvre ce lien (valable 24 h) et enregistre-toi 10 s à la webcam en lisant la "
           "phrase affichée :\n\n  " + r["url"] + "\n\nPuis relance `check` pour vérifier.")
 
@@ -203,7 +342,7 @@ def cmd_generate(a):
         sys.exit(f"Audio introuvable : {audio}")
     c = config()
     if not c.get("avatar_id"):
-        sys.exit("Pas de double configuré : lance /setup-double-ia (ou `create <video>`).")
+        sys.exit("Pas de double configuré : lance /setup-double-ia (ou `create <video>`, ou `lier`).")
     engine = a.engine or c.get("engine") or "avatar_iv"
     slug = a.slug or slug_of(audio)
     reel = dossier_reel()
@@ -302,6 +441,12 @@ def main():
     c.add_argument("file", help="vidéo de ~30 s, sans aucune coupe")
     c.add_argument("--name", default="Mon double", help="nom du double")
     c.add_argument("--force", action="store_true", help="recréer même si un double existe")
+    li = sub.add_parser("lier", help="relie un double déjà créé sur HeyGen (sans --avatar-id : liste tes doubles)")
+    li.add_argument("--avatar-id", help="id du LOOK du double (celui qui génère)")
+    li.add_argument("--group-id", help="id du groupe du double (défaut : lu sur HeyGen)")
+    li.add_argument("--nom", help="nom du double (défaut : son nom sur HeyGen)")
+    li.add_argument("--engine", choices=list(MOTEURS), help="défaut : avatar_iv")
+    li.add_argument("--force", action="store_true", help="remplacer le double déjà configuré")
     sub.add_parser("consent", help="lien webcam de consentement")
     g = sub.add_parser("generate", help="audio → vidéo de ton double")
     g.add_argument("audio", help="le cut NETTOYÉ de ta voix, derush/<slug>_voice_enhanced.mp3 (max 10 min / 50 Mo)")
@@ -309,11 +454,11 @@ def main():
     g.add_argument("--slug", help="nom du reel (défaut : déduit du nom de l'audio)")
     g.add_argument("--allow-raw", action="store_true",
                    help="générer un audio qui n'est pas passé par build_audio_cut.py (déjà propre, lu d'une traite)")
-    g.add_argument("--engine", choices=["avatar_iv", "avatar_v"],
+    g.add_argument("--engine", choices=list(MOTEURS),
                    help="défaut : celui de la config (avatar_iv)")
     g.add_argument("--yes", action="store_true", help="ne pas demander confirmation du coût")
     a = p.parse_args()
-    {"check": cmd_check, "create": cmd_create,
+    {"check": cmd_check, "create": cmd_create, "lier": cmd_lier,
      "consent": cmd_consent, "generate": cmd_generate}[a.cmd](a)
 
 

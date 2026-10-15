@@ -160,7 +160,8 @@ la vidéo générée remplace le rush filmé, à l'identique.
 
 ## Dépannage
 
-- « Pas de double configuré » → `/setup-double-ia`.
+- « Pas de double configuré » → `/setup-double-ia` (double déjà créé sur HeyGen : étape 4 bis,
+  `python3 tools/double_ia.py lier`).
 - Consentement pas accepté → `python3 tools/double_ia.py consent` (lien webcam 24 h).
 - Génération `failed` → lire le `failure_message` du script ; le plus courant : audio
   trop long (> 10 min) ou solde à zéro.

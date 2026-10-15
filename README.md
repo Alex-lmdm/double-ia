@@ -46,6 +46,9 @@ dans l'accueil de Monteur IA), et colle le prompt d'installation : il est dans *
 le consentement (10 s à la webcam : personne ne peut cloner quelqu'un d'autre), et ta
 première génération. ~20 minutes, une seule fois.
 
+Tu as déjà un double sur HeyGen ? Dis-le-lui au setup : il le relie à ton monteur tel quel,
+sans le recréer ni rien payer.
+
 ## Comment on s'en sert ensuite
 
 Deux phrases à dire à ton monteur :

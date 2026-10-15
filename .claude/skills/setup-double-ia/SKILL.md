@@ -4,9 +4,10 @@ description: >-
   Onboarding guidé de l'extension « Ton Double IA » : accompagne l'utilisateur de ZÉRO
   jusqu'à sa première vidéo générée par son double HeyGen. Use when the user says
   « /setup-double-ia », « installe mon double », « crée mon double IA », « configure
-  HeyGen », ou au premier usage si `double-ia.config.json` n'existe pas. Guide pas à pas,
-  une étape à la fois : compte HeyGen gratuit, clé API, portefeuille, vidéo
-  d'entraînement, création du double, consentement, première génération.
+  HeyGen », « j'ai déjà un double HeyGen », « relie mon avatar HeyGen », ou au premier usage
+  si `double-ia.config.json` n'existe pas. Guide pas à pas, une étape à la fois : compte
+  HeyGen gratuit, clé API, portefeuille, vidéo d'entraînement, création du double (ou
+  liaison d'un double qui existe déjà sur HeyGen), consentement, première génération.
 ---
 
 # Setup : Ton Double IA (onboarding guidé)
@@ -28,8 +29,13 @@ paies uniquement ce que tu génères, environ 2 $ pour un reel de 30 secondes. �
 Avant de commencer, situe où en est l'utilisateur :
 - `double-ia.config.json` existe + `python3 tools/double_ia.py check` dit consentement
   accepté → tout est déjà configuré, propose directement une génération (étape 7).
-- La clé marche mais pas de config → reprendre à l'étape 4.
+- La clé marche mais pas de config → demande-lui s'il a déjà un double sur HeyGen (étape 4 bis) ;
+  sinon, reprendre à l'étape 4.
 - Pas de clé → reprendre à l'étape 1.
+
+**Première question, avant l'étape 1 :** « Tu as déjà un double (un avatar vidéo de toi) sur
+HeyGen ? » Oui → il garde son compte : étape 2 (clé API du compte où vit ce double), étape 3
+(portefeuille), puis **étape 4 bis** au lieu des étapes 4 et 5. Non → étape 1.
 
 ## Étape 1 : compte HeyGen gratuit (interface, ~1 min)
 
@@ -85,6 +91,32 @@ python3 tools/double_ia.py create <video> --name "Double de <prénom>"
 Explique pendant l'attente : « HeyGen apprend ton visage et tes mouvements. Il clone
 aussi ta voix au passage, mais on ne s'en servira pas : notre méthode utilise TA vraie voix,
 c'est ce qui rend le résultat indétectable. »
+
+## Étape 4 bis : relier un double qui existe déjà sur HeyGen (moi, ~1 min, gratuit)
+
+Rien n'est créé ni débité : on lit son compte HeyGen et on note son double. Liste ses doubles :
+
+```bash
+python3 tools/double_ia.py lier
+```
+
+Montre-lui la liste (nom de chaque look) et demande lequel il utilise : un **look** = une
+tenue et un lieu ; c'est son id qui génère. Puis :
+
+```bash
+python3 tools/double_ia.py lier --avatar-id <id du look> --nom "Double de <prénom>"
+```
+
+L'outil vérifie le look et son groupe (et corrige seul l'erreur courante : un id de groupe
+donné à la place de l'id du look), choisit le moteur que le look prend en charge et écrit
+`double-ia.config.json`. S'il refuse (look inconnu de ce compte, entraînement échoué, moteur
+non pris en charge), dis-le simplement : un double échoué ou incompatible se recrée par les
+étapes 4 et 5. Un double déjà configuré n'est remplacé qu'avec `--force`, à sa demande.
+Sans clé API, `lier --avatar-id <id> [--group-id <id>]` écrit la config sans vérifier
+(avertissement) : `check` vérifie dès que la clé est posée.
+
+Ensuite : si l'outil dit que le consentement est déjà accepté, passe à l'étape 7 ; sinon,
+étape 6.
 
 ## Étape 6 : consentement (webcam, ~2 min)
 
