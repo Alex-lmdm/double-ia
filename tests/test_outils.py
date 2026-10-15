@@ -10,6 +10,7 @@ import importlib
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -93,6 +94,43 @@ class CheminFfmpeg(unittest.TestCase):
 
     def test_build_audio_cut(self):
         self.verifier("build_audio_cut", "ffmpeg_bin")
+
+
+class MargesDuDerush(unittest.TestCase):
+    """derush.padStart / padEnd à 0 = aucune marge, réglage voulu : jamais remplacé par le défaut."""
+
+    def test_reglage(self):
+        m = charger("build_audio_cut")
+        self.assertEqual(m.reglage({"padEnd": 0}, "padEnd", 0.02), 0.0)
+        self.assertEqual(m.reglage({"padStart": 0.0}, "padStart", 0.04), 0.0)
+        self.assertEqual(m.reglage({}, "padEnd", 0.02), 0.02)
+        self.assertEqual(m.reglage({"padEnd": None}, "padEnd", 0.02), 0.02)
+        self.assertEqual(m.reglage({"padEnd": 0.05}, "padEnd", 0.02), 0.05)
+        with self.assertRaises(SystemExit):
+            m.reglage({"padEnd": "beaucoup"}, "padEnd", 0.02)
+
+    @unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg absent")
+    def test_cut_sans_marge(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            maison = pathlib.Path(tmp) / "Monteur IA"
+            (maison / "tools").mkdir(parents=True)
+            shutil.copy2(OUTILS / "build_audio_cut.py", maison / "tools")
+            (maison / "brand.config.json").write_text(json.dumps({"derush": {"padStart": 0, "padEnd": 0}}),
+                                                      encoding="utf-8")
+            brut = maison / "brut.wav"
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=300:sample_rate=48000",
+                            "-t", "3", str(brut)], check=True)
+            segments = maison / "segments.json"
+            segments.write_text(json.dumps([{"start": 0.5, "end": 1.0, "text": "un"},
+                                            {"start": 1.5, "end": 2.0, "text": "deux", "gap": "none"}]),
+                                encoding="utf-8")
+            r = subprocess.run([sys.executable, str(maison / "tools" / "build_audio_cut.py"), str(brut),
+                                "--segments", str(segments), "--slug", "essai"], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            tl = json.loads((maison / "derush" / "essai_audio_timeline.json").read_text(encoding="utf-8"))
+            self.assertEqual((tl["padStart"], tl["padEnd"], tl["duration"]), (0.0, 0.0, 1.0))
+            self.assertEqual([(x["start"], x["end"]) for x in tl["takes"]], [(0.0, 0.5), (0.5, 1.0)])
+
 
 
 if __name__ == "__main__":

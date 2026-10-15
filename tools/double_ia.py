@@ -204,7 +204,7 @@ def cmd_generate(a):
     c = config()
     if not c.get("avatar_id"):
         sys.exit("Pas de double configuré : lance /setup-double-ia (ou `create <video>`).")
-    engine = a.engine or c.get("engine", "avatar_iv")
+    engine = a.engine or c.get("engine") or "avatar_iv"
     slug = a.slug or slug_of(audio)
     reel = dossier_reel()
     out = pathlib.Path(a.out) if a.out else reel / "derush" / f"{slug}_enhanced.mp4"

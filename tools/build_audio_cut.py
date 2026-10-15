@@ -21,7 +21,8 @@ Sorties (dans derush/) :
   - `<slug>_audio_timeline.json`  : bornes de chaque prise SUR LE CUT (start, end, text) ;
     `double_ia.py generate` s'en sert pour écrire le `<slug>_cuts.json` du montage.
 
-Réglages : lus dans brand.config.json → derush.padStart / derush.padEnd (défauts 0.04 / 0.02).
+Réglages : lus dans brand.config.json → derush.padStart / derush.padEnd (défauts 0.04 / 0.02 ;
+0 est un réglage, aucune marge, et non un oubli : seuls une clé absente ou null prennent le défaut).
 """
 import argparse
 import json
@@ -74,6 +75,18 @@ def ffmpeg_bin(name):
     return shutil.which(name) or name
 
 
+def reglage(cfg, cle, defaut):
+    """Un nombre de brand.config.json : la valeur réglée, 0 compris ; le défaut si la clé manque ou
+    vaut null."""
+    v = cfg.get(cle)
+    if v is None:
+        return defaut
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        sys.exit(f"derush.{cle} doit être un nombre de secondes (ex. 0.02), pas « {v} ».")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -90,8 +103,8 @@ def main():
         sys.exit("Aucun segment : rien à couper.")
 
     derush_cfg = brand_config().get("derush") or {}
-    pad_start = float(derush_cfg.get("padStart") or 0.04)
-    pad_end = float(derush_cfg.get("padEnd") or 0.02)
+    pad_start = reglage(derush_cfg, "padStart", 0.04)
+    pad_end = reglage(derush_cfg, "padEnd", 0.02)
     if pad_start < 0:
         sys.exit("derush.padStart doit rester positif (attaques de voyelle fragiles).")
 

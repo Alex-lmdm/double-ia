@@ -90,9 +90,10 @@ détection de changement de plan). Outils et modèle Whisper : `brand.config.jso
 python3 tools/build_audio_cut.py "<audio brut>" --segments derush/<slug>_segments.json --slug <slug>
 ```
 
-   Il applique `derush.padStart` / `padEnd` (0,04 / 0,02 : on resserre les fins, jamais les
-   débuts), insère un souffle régulier entre les prises (0,10 s ; 0,05 en liaison
-   intra-phrase ; 0,15 sur une respiration), et sort `derush/<slug>_voice.mp3` (320k mono
+   Il applique `derush.padStart` / `padEnd` (0,04 / 0,02 par défaut : on resserre les fins,
+   jamais les débuts ; un 0 réglé par l'utilisateur est respecté, aucune marge), insère un
+   souffle régulier entre les prises (0,10 s ; 0,05 en liaison intra-phrase ; 0,15 sur une
+   respiration), et sort `derush/<slug>_voice.mp3` (320k mono
    48 kHz) + `derush/<slug>_audio_timeline.json`.
 6. Vérifier : re-transcrire le cut (lecture = script, zéro doublon, zéro mot coupé) et mesurer
    les souffles (`silencedetect=noise=-40dB:d=0.05` → moyenne ≈ 0,10 s, max < 0,21 s).
