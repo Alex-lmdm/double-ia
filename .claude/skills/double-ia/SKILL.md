@@ -6,9 +6,7 @@ description: >-
   provides an AUDIO file (dictaphone, mp3, m4a, wav) and says « utilise mon double »,
   « génère avec mon avatar », « ma vidéo avec le double IA ». Ne s'applique PAS si
   l'utilisateur fournit une VIDÉO de lui : c'est le pipeline habituel (skill `derush`).
-  Ordre verrouillé : dérush de l'audio → validation à l'oreille → nettoyage audio →
-  génération → montage normal. Sortie : derush/<slug>_enhanced.mp4 + <slug>_cuts.json,
-  les mêmes livrables qu'un dérush filmé. Si `double-ia.config.json` n'existe pas →
+  Si `double-ia.config.json` n'existe pas →
   router vers `setup-double-ia`. JAMAIS de génération sans confirmation explicite du coût.
 ---
 
