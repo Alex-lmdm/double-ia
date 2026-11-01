@@ -32,8 +32,8 @@ pipeline Monteur IA normal (`derush` puis `motion-design`), le double n'intervie
 
 ## ⛔ Règles d'argent
 
-- Chaque génération débite le portefeuille HeyGen de l'utilisateur (~0,07 $/s, ~2 $ le reel
-  de 30 s). **Jamais de génération sans son accord explicite sur le coût affiché** par le
+- Chaque génération débite le portefeuille HeyGen de l'utilisateur (le script affiche le coût
+  exact avant chaque génération). **Jamais de génération sans son accord explicite sur le coût affiché** par le
   script. Ne passe `--yes` que s'il vient de dire oui dans la conversation.
 - **On ne génère jamais l'enregistrement brut.** Un script lu au dictaphone contient des
   blancs, des faux départs et des phrases reprises (mesuré : 94 s de brut pour 44 s utiles,
