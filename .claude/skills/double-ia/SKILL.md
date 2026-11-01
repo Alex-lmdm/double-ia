@@ -132,7 +132,8 @@ python3 tools/double_ia.py generate derush/<slug>_voice_enhanced.mp3
 
 Le script refuse un `_voice.mp3` non nettoyé et un audio sans `_audio_timeline.json` (garde-fou
 contre la génération du brut ; `--allow-raw` seulement si l'utilisateur fournit un audio déjà
-propre et lu d'une traite). Il affiche durée, coût estimé et solde, **attend la confirmation**,
+propre et lu d'une traite). Il affiche durée, coût estimé et solde ; lancé par l'agent, il s'arrête là sans rien
+débiter (annonce ce coût, attends son oui, relance avec `--yes`). Avec `--yes`, il
 génère (moteur `avatar_iv` de la config), puis conforme : 25 → 29,97 fps, crf 14, et remet
 l'audio d'origine. Sorties : `derush/<slug>_enhanced.mp4` (le même nom qu'un dérush filmé)
 et `derush/<slug>_cuts.json` (frontières des prises, dérivées du cut audio : le double ne

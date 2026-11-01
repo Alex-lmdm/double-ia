@@ -368,8 +368,13 @@ def cmd_generate(a):
     if dur * RATE_PER_SEC > b:
         sys.exit("Solde insuffisant : recharge le portefeuille API sur app.heygen.com "
                  "(Espace API → Billing).")
-    if not a.yes and input("Lancer la génération ? [o/N] ").strip().lower() not in ("o", "oui", "y"):
-        sys.exit("Annulé : rien n'a été débité.")
+    if not a.yes:
+        # Lancé par un agent, stdin n'est pas un terminal : input() planterait (EOFError).
+        if not sys.stdin.isatty():
+            sys.exit("Rien n'est lancé ni débité : annonce ce coût, attends l'accord, "
+                     "puis relance la même commande avec --yes.")
+        if input("Lancer la génération ? [o/N] ").strip().lower() not in ("o", "oui", "y"):
+            sys.exit("Annulé : rien n'a été débité.")
 
     asset = req("/v3/assets", "POST", files=(audio.name, audio.read_bytes()))
     vid = req("/v3/videos", "POST", {
