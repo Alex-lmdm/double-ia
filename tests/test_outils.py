@@ -265,7 +265,8 @@ class LierUnDoubleExistant(unittest.TestCase):
             code, sortie = self.lancer("lier", "--avatar-id", "look1", routes={})
         self.assertEqual(code, 0, sortie)
         self.assertIn("SANS vérification", sortie)
-        self.assertEqual(self.config(), {"name": "Mon double", "avatar_id": "look1", "engine": "avatar_iv"})
+        # Hors ligne, les moteurs du look sont inconnus : Avatar 6 d'office, `generate` se replie au besoin.
+        self.assertEqual(self.config(), {"name": "Mon double", "avatar_id": "look1", "engine": "heygen-avatar-6"})
         # La clé posée, `check` lit le groupe sur HeyGen et complète la config.
         code, sortie = self.lancer("check", routes={"/v3/users/me": {"wallet": {"remaining_balance": 12.5}},
                                                     "/v3/avatars/looks/look1": LOOK, "/v3/avatars/grp1": GROUPE})
@@ -274,12 +275,140 @@ class LierUnDoubleExistant(unittest.TestCase):
         self.assertEqual(self.config()["avatar_group_id"], "grp1")
 
 
+LOOK6 = {**LOOK, "supported_api_engines": ["avatar_v", "avatar_iv", "avatar_iii", "heygen-avatar-6",
+                                          "heygen-avatar-6-turbo"]}
+
+
+class Avatar6(unittest.TestCase):
+    """Avatar 6 (17/11/2026) : moteur par défaut quand le look le prend, repli sinon, options de jeu
+    envoyées seulement aux moteurs qui les acceptent (Avatar IV refuse motion_prompt)."""
+
+    def setUp(self):
+        self.m = charger("double_ia")
+
+    def test_choisir_moteur(self):
+        c = self.m.choisir_moteur
+        self.assertEqual(c(None, LOOK6["supported_api_engines"]), ("heygen-avatar-6", None))
+        self.assertEqual(c("avatar_iv", LOOK6["supported_api_engines"]), ("avatar_iv", None))
+        moteur, remarque = c(None, LOOK["supported_api_engines"])
+        self.assertEqual(moteur, "avatar_iv")
+        self.assertIn("Avatar 6 n'est pas disponible", remarque)
+        self.assertEqual(c("heygen-avatar-6-turbo", []), ("heygen-avatar-6-turbo", None), "inconnu : on garde")
+        moteur, remarque = c(None, ["avatar_iii"])
+        self.assertIsNone(moteur)
+        self.assertIn("Avatar III", remarque)
+
+    def test_demande_video(self):
+        d = self.m.demande_video("look1", "a1", "heygen-avatar-6", "t", "sourire", True)
+        self.assertEqual(d["engine"], {"type": "heygen-avatar-6", "motion_expressiveness": "less"})
+        self.assertEqual(d["motion_prompt"], "sourire")
+        self.assertEqual((d["resolution"], d["aspect_ratio"], d["audio_asset_id"]), ("1080p", "auto", "a1"))
+        iv = self.m.demande_video("look1", "a1", "avatar_iv", "t", "sourire", True)
+        self.assertEqual(iv["engine"], {"type": "avatar_iv"})
+        self.assertNotIn("motion_prompt", iv)
+        v = self.m.demande_video("look1", "a1", "avatar_v", "t", "x" * 2000)
+        self.assertEqual(len(v["motion_prompt"]), 1200)
+        self.assertEqual(v["engine"], {"type": "avatar_v"})
+
+    def test_tarifs(self):
+        self.assertAlmostEqual(self.m.tarif("heygen-avatar-6") * 30, 3.0)
+        self.assertAlmostEqual(self.m.tarif("heygen-avatar-6-turbo") * 30, 1.5)
+        self.assertEqual(self.m.tarif("inconnu"), max(self.m.TARIFS.values()), "inconnu : le plus cher")
+
+
+class VoixClonee(unittest.TestCase):
+    """Option « zéro micro » : le texte lu par la voix clonée garde des bornes de phrases (pour le
+    montage) et un nom de fichier que `generate` reconnaît."""
+
+    def setUp(self):
+        self.m = charger("double_ia")
+
+    def horodater(self, texte, pas=0.05):
+        return [{"text": ch, "start_time": round(i * pas, 3), "end_time": round((i + 1) * pas, 3)}
+                for i, ch in enumerate(texte)]
+
+    def test_phrases(self):
+        texte = "Je ne l'ai pas tournée. C'est mon double ! Tu vois la différence ?"
+        prises = self.m.phrases_horodatees(texte, self.horodater(texte))
+        self.assertEqual([p["text"] for p in prises],
+                         ["Je ne l'ai pas tournée.", "C'est mon double !", "Tu vois la différence ?"])
+        self.assertEqual([p["i"] for p in prises], [0, 1, 2])
+        self.assertEqual(prises[0]["start"], 0.0)
+        self.assertTrue(all(a["end"] <= b["start"] for a, b in zip(prises, prises[1:])))
+        self.assertEqual(prises[-1]["end"], round(len(texte) * 0.05, 3))
+        self.assertEqual(self.m.phrases_horodatees("Une phrase sans point", self.horodater("Une phrase sans point"))[0]["text"],
+                         "Une phrase sans point")
+        self.assertEqual(self.m.phrases_horodatees(texte, self.horodater(texte)[:-1]), [], "horodatage incomplet")
+
+    def test_slug(self):
+        self.assertEqual(self.m.slug_of(pathlib.Path("derush/promo-noel_voix_clonee.mp3")), "promo-noel")
+        self.assertEqual(self.m.slug_of(pathlib.Path("derush/codes_voice_enhanced.mp3")), "codes")
+
+
+class Autonome(unittest.TestCase):
+    """Ton Double IA installé seul (sans Monteur IA) : reconnu par l'absence de templates/AGENT.md.tpl ;
+    `moteur` et `check` restent en lecture seule (aucune génération, rien de débité)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.maison = pathlib.Path(self.tmp.name) / "Ton Double IA"
+        self.maison.mkdir()
+        self.m = charger("double_ia")
+        self.m.MAISON = self.maison
+        self.m.CONFIG = self.maison / "double-ia.config.json"
+        self.cle = mock.patch.dict(os.environ, {"HEYGEN_API_KEY": "cle-de-test"})
+        self.cle.start()
+
+    def tearDown(self):
+        self.cle.stop()
+        self.tmp.cleanup()
+
+    def lancer(self, *args, routes):
+        faux = FauxHeyGen(routes)
+        sortie = io.StringIO()
+        with mock.patch.object(self.m.urllib.request, "urlopen", faux), \
+                mock.patch.object(sys, "argv", ["double_ia.py", *args]), contextlib.redirect_stdout(sortie):
+            try:
+                self.m.main()
+                code = 0
+            except SystemExit as e:
+                code = e.code or 0
+        self.assertTrue(all(methode == "GET" for methode, _ in faux.appels), faux.appels)
+        return code, sortie.getvalue() + (code if isinstance(code, str) else "")
+
+    def test_detection(self):
+        self.assertTrue(self.m.autonome())
+        (self.maison / "templates").mkdir()
+        (self.maison / "templates" / "AGENT.md.tpl").write_text("", encoding="utf-8")
+        self.assertFalse(self.m.autonome())
+
+    def test_moteur_et_check(self):
+        self.m.CONFIG.write_text(json.dumps({"name": "Léa", "avatar_id": "look1", "avatar_group_id": "grp1",
+                                             "engine": "avatar_iv"}), encoding="utf-8")
+        routes = {"/v3/avatars/looks/look1": LOOK6, "/v3/avatars/grp1": GROUPE,
+                  "/v3/users/me": {"wallet": {"remaining_balance": 9.0}}}
+        code, sortie = self.lancer("check", routes=routes)
+        self.assertEqual(code, 0, sortie)
+        self.assertIn("Ton Double IA, seul", sortie)
+        self.assertIn("Avatar 6 est disponible", sortie)
+        code, sortie = self.lancer("moteur", routes=routes)
+        self.assertEqual(code, 0, sortie)
+        self.assertIn("Avatar 6 Turbo", sortie)
+        self.assertIn("~3.00 $", sortie)
+        code, sortie = self.lancer("moteur", "heygen-avatar-6", routes=routes)
+        self.assertEqual(code, 0, sortie)
+        self.assertEqual(json.loads(self.m.CONFIG.read_text(encoding="utf-8"))["engine"], "heygen-avatar-6")
+        code, sortie = self.lancer("moteur", "heygen-avatar-6", routes={**routes, "/v3/avatars/looks/look1": LOOK})
+        self.assertNotEqual(code, 0)
+        self.assertIn("pas disponible", sortie)
+
+
 class SansTiretLong(unittest.TestCase):
     """Rien de ce qui est livré (outils, skills, consignes, README, INSTALL) ne contient de tiret long."""
 
     def test_fichiers_livres(self):
         livres = [*OUTILS.glob("*.py"), *(DEPOT / ".claude" / "skills").rglob("*.*"),
-                  *(DEPOT / "templates").glob("*.md"), DEPOT / "README.md", DEPOT / "INSTALL.md"]
+                  *(DEPOT / "templates").rglob("*.md"), DEPOT / "README.md", DEPOT / "INSTALL.md"]
         fautifs = [f"{p.relative_to(DEPOT)}:{n}" for p in livres if p.is_file()
                    for n, ligne in enumerate(p.read_text(encoding="utf-8").splitlines(), 1) if "\u2014" in ligne]
         self.assertEqual(fautifs, [])

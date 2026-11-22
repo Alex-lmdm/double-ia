@@ -1,37 +1,50 @@
 ---
 name: double-ia
 description: >-
-  Génère la vidéo face-cam de l'utilisateur depuis un AUDIO de sa vraie voix, via son
-  double HeyGen, puis enchaîne sur le montage Monteur IA normal. Use when the user
-  provides an AUDIO file (dictaphone, mp3, m4a, wav) and says « utilise mon double »,
-  « génère avec mon avatar », « ma vidéo avec le double IA ». Ne s'applique PAS si
-  l'utilisateur fournit une VIDÉO de lui : c'est le pipeline habituel (skill `derush`).
-  Si `double-ia.config.json` n'existe pas →
-  router vers `setup-double-ia`. JAMAIS de génération sans confirmation explicite du coût.
+  Génère la vidéo face-cam de l'utilisateur avec son double HeyGen, depuis un AUDIO de sa vraie
+  voix (par défaut) ou depuis un TEXTE lu par sa voix clonée (option « zéro micro »), puis enchaîne
+  sur le montage Monteur IA, ou rend la vidéo prête à monter quand Ton Double IA est installé seul.
+  Use when the user provides an AUDIO file (dictaphone, mp3, m4a, wav) and says « utilise mon
+  double », « génère avec mon avatar », « ma vidéo avec le double IA », or gives a TEXT and says
+  « avec ma voix clonée », « sans micro », « fais parler mon double ». Ne s'applique PAS si
+  l'utilisateur fournit une VIDÉO de lui. Si `double-ia.config.json` n'existe pas → router vers
+  `setup-double-ia`. JAMAIS de génération sans confirmation explicite du coût.
 ---
 
-# Double IA : audio → vidéo face-cam → montage
+# Double IA : voix → vidéo face-cam → montage
 
 L'utilisateur a un double HeyGen (configuré par `/setup-double-ia`, config dans
-`double-ia.config.json`). Il écrit son script (ou tu l'écris avec lui via `reel-script`), le lit
-au dictaphone de son téléphone, et t'envoie l'audio. Le double fait l'image. **On ne clone
-jamais la voix : l'audio envoyé EST la piste son finale du Reel.** C'est ce qui rend le
-résultat naturel.
+`double-ia.config.json`). Deux façons de le faire parler :
 
-**Où travailler :** dans le dossier du Reel (`reels/<nom>/`, un projet par Reel) : les chemins
-`derush/…` et `tools/…` de ce skill partent de là. Pas encore de Reel : crée-le d'abord, comme pour
-une vidéo filmée, avec `tools/nouveau_reel.py "<sujet>"` du dossier Monteur IA (depuis l'accueil de
-l'app : `../tools/nouveau_reel.py`), puis travaille dans son dossier. La config du double, elle,
-reste dans le dossier Monteur IA, partagée par tous les Reels. (Ancienne installation sans
-`reels/` : tout se passe à la racine, comme avant.)
+- **Sa vraie voix (par défaut, la plus naturelle)** : il écrit son script (ou tu l'écris avec lui),
+  le lit au dictaphone de son téléphone et t'envoie l'audio. **L'audio envoyé EST la piste son
+  finale** : c'est ce qui rend le résultat naturel. Étapes 1 à 3, puis 4.
+- **Sa voix clonée (zéro micro)**, seulement s'il la demande ou ne peut pas enregistrer : il te
+  donne le texte, sa voix clonée le lit (§ Voix clonée), puis étape 4. Plus pratique, un peu moins
+  naturel : dis-le-lui une fois, sans le décourager.
 
-**Quand cette extension ne s'active pas :** l'utilisateur t'envoie une **vidéo** de lui →
-pipeline Monteur IA normal (`derush` puis `motion-design`), le double n'intervient pas.
+**Deux installations possibles** (`python3 tools/double_ia.py check` dit laquelle, ligne « Dossier ») :
+
+- **Dans Monteur IA** : travaille dans le dossier du Reel (`reels/<nom>/`, un projet par Reel) : les
+  chemins `derush/…` et `tools/…` de ce skill partent de là. Pas encore de Reel : crée-le d'abord,
+  comme pour une vidéo filmée, avec `tools/nouveau_reel.py "<sujet>"` du dossier Monteur IA (depuis
+  l'accueil de l'app : `../tools/nouveau_reel.py`), puis travaille dans son dossier. La config du
+  double reste dans le dossier Monteur IA, partagée par tous les Reels. (Ancienne installation sans
+  `reels/` : tout se passe à la racine, comme avant.) Script : skill `reel-script`.
+- **Seul** (dossier « Ton Double IA », sans `templates/AGENT.md.tpl`) : tout se passe à la racine du
+  dossier, aucun Reel à créer. La vidéo finie sort dans `videos/<slug>.mp4` ; il n'y a pas de montage
+  derrière (étape 6). Script : écris-le avec lui (30 à 45 s, phrases courtes, l'accroche dans la
+  première phrase), fais-le valider avant qu'il le lise.
+
+**Quand ce skill ne s'active pas :** l'utilisateur t'envoie une **vidéo** de lui → dans Monteur IA,
+pipeline normal (`derush` puis `motion-design`), le double n'intervient pas ; installé seul, dis-lui
+simplement que ce dossier fabrique des vidéos avec son double et ne monte pas une vidéo filmée.
 
 ## ⛔ Règles d'argent
 
 - Chaque génération débite le portefeuille HeyGen de l'utilisateur (le script affiche le coût
-  exact avant chaque génération). **Jamais de génération sans son accord explicite sur le coût affiché** par le
+  exact avant chaque génération : environ 3 $ le Reel de 30 s en Avatar 6, 1,50 $ en Avatar 6
+  Turbo). **Jamais de génération sans son accord explicite sur le coût affiché** par le
   script. Ne passe `--yes` que s'il vient de dire oui dans la conversation.
 - **On ne génère jamais l'enregistrement brut.** Un script lu au dictaphone contient des
   blancs, des faux départs et des phrases reprises (mesuré : 94 s de brut pour 44 s utiles,
@@ -41,22 +54,43 @@ pipeline Monteur IA normal (`derush` puis `motion-design`), le double n'intervie
 - Solde insuffisant → le script le dit ; guide vers l'Espace API HeyGen pour recharger
   (app.heygen.com → API → billing). Ne jamais réessayer en boucle.
 
-## L'ordre, verrouillé (ne pas inverser)
+## L'ordre, verrouillé (ne pas inverser) : sa vraie voix
 
 | # | Étape | Qui | Barrière « terminé quand » |
 |---|---|---|---|
 | 1 | **Dérush de l'audio** | toi | `derush/<slug>_voice.mp3` : lecture = script, zéro doublon, zéro mot coupé, souffles ≈ 0,10 s |
 | 2 | **Validation à l'oreille** | l'utilisateur | il a écouté le MP3 et dit OK (contenu + rythme) |
 | 3 | **Nettoyage audio** | Adobe Podcast Enhance (l'utilisateur glisse le MP3, toi le reste) | `derush/<slug>_voice_enhanced.mp3`, **même durée** que le cut |
-| 4 | **Génération** | toi, après accord sur le coût | `derush/<slug>_enhanced.mp4` + `<slug>_cuts.json` |
+| 4 | **Génération** | toi, après accord sur le coût | Monteur IA : `derush/<slug>_enhanced.mp4` + `<slug>_cuts.json` ; seul : `videos/<slug>.mp4` |
 | 5 | **Vérification du rendu** | toi | pas d'artefact, lip sync OK, 1080x1920 @ 29,97 |
-| 6 | **Montage normal** | `motion-design` | comme avec un vrai rush |
+| 6 | **Montage normal**, ou livraison (seul) | `motion-design`, ou toi | comme avec un vrai rush |
 
 Pourquoi cet ordre : HeyGen cale la vidéo sur l'audio reçu et cet audio devient la piste
 son finale. Couper ou nettoyer **après** la génération = recouper une vidéo payée en trop, ou
 remplacer la piste sur laquelle le lip sync a été calculé (désynchro). Et nettoyer **après**
 le cut plutôt qu'avant : le nettoyage uniformise le fond sonore sur l'ensemble, ce qui
 masque les jump-cuts au lieu de les souligner.
+
+## Voix clonée (zéro micro) : à la place des étapes 1 à 3
+
+Seulement s'il la demande. `python3 tools/double_ia.py check` dit s'il a une voix clonée ; sinon,
+crée-la une fois (gratuit, quelques secondes) : il enregistre **environ 1 minute** de sa voix au
+dictaphone, dans une pièce calme, en parlant normalement (le clone garde le son de la pièce), puis
+
+```bash
+python3 tools/double_ia.py cloner-voix "<enregistrement>"
+```
+
+Ensuite, à chaque vidéo : fais-lui valider le texte, puis
+
+```bash
+python3 tools/double_ia.py voix-clonee "<texte, ou fichier .txt>" --slug <slug>
+```
+
+Il écrit `derush/<slug>_voix_clonee.mp3` (déjà propre : ni dérush ni Adobe Podcast) et les bornes
+de chaque phrase (`<slug>_audio_timeline.json`). **Fais-le écouter avant de générer** (même geste
+que l'étape 2). Un mot mal dit : réécris-le comme il se prononce, ou reformule la phrase, et
+relance (gratuit). Validé : étape 4 sur `derush/<slug>_voix_clonee.mp3`.
 
 ## Étape 1 : dérusher l'audio
 
@@ -125,20 +159,34 @@ avant de générer. **C'est ce fichier nettoyé, et lui seul, qui part en géné
 ## Étape 4 : générer
 
 ```bash
-python3 tools/double_ia.py generate derush/<slug>_voice_enhanced.mp3
+python3 tools/double_ia.py generate derush/<slug>_voice_enhanced.mp3     # sa vraie voix
+python3 tools/double_ia.py generate derush/<slug>_voix_clonee.mp3        # sa voix clonée
 ```
 
 Le script refuse un `_voice.mp3` non nettoyé et un audio sans `_audio_timeline.json` (garde-fou
 contre la génération du brut ; `--allow-raw` seulement si l'utilisateur fournit un audio déjà
-propre et lu d'une traite). Il affiche durée, coût estimé et solde ; lancé par l'agent, il s'arrête là sans rien
-débiter (annonce ce coût, attends son oui, relance avec `--yes`). Avec `--yes`, il
-génère (moteur `avatar_iv` de la config), puis conforme : 25 → 29,97 fps, crf 14, et remet
-l'audio d'origine. Sorties : `derush/<slug>_enhanced.mp4` (le même nom qu'un dérush filmé)
-et `derush/<slug>_cuts.json` (frontières des prises, dérivées du cut audio : le double ne
-saute pas à l'image, pas de scene-change à mesurer). Limites : 10 min / 50 Mo.
+propre et lu d'une traite). Il affiche durée, moteur, coût estimé et solde ; lancé par l'agent, il
+s'arrête là sans rien débiter (annonce ce coût, attends son oui, relance avec `--yes`). Avec
+`--yes`, il génère avec le moteur de la config, puis conforme : 25 → 29,97 fps, crf 14, et remet
+l'audio d'origine. Sorties : dans Monteur IA, `derush/<slug>_enhanced.mp4` (le même nom qu'un
+dérush filmé) et `derush/<slug>_cuts.json` (frontières des prises, dérivées du cut audio : le
+double ne saute pas à l'image, pas de scene-change à mesurer) ; installé seul, `videos/<slug>.mp4`.
+Limites : 10 min / 50 Mo. Un rendu prend 1 à 3 minutes pour 30 s.
 
-`--engine avatar_v` seulement si l'utilisateur le demande (image un peu plus nette, même
-prix, mouvements moins naturels). Ne propose jamais Avatar III.
+**Le moteur** (`python3 tools/double_ia.py moteur` les liste avec leur prix, `moteur <nom>` en
+change pour les vidéos suivantes) :
+- **Avatar 6** (`heygen-avatar-6`), celui d'un nouveau double : les gestes suivent ce qu'il dit,
+  environ 3 $ le Reel de 30 s.
+- **Avatar 6 Turbo** (`heygen-avatar-6-turbo`) : moitié prix, rendu plus rapide, un peu moins
+  fin. À proposer pour un essai ou s'il veut dépenser moins.
+- **Avatar IV** et **Avatar V** : les anciens moteurs (environ 2,20 $). Un double configuré avant
+  Avatar 6 garde le sien : `check` signale qu'Avatar 6 est disponible ; propose-le une fois, avec
+  son prix, et ne change de moteur que sur son oui. Ne propose jamais Avatar III.
+
+**Sa gestuelle** (Avatar 6, et Avatar V pour la direction) : `--direction "<consigne>"` décrit
+le jeu voulu en une phrase claire, de préférence en anglais (« smile warmly, small open-handed
+gestures »), et `--calme` donne des gestes plus rares et plus petits. Seulement s'il le demande ou
+si un rendu précédent bougeait trop : par défaut, Avatar 6 cale déjà les gestes sur le texte.
 
 ## Étape 5 : vérifier avant de montrer
 
@@ -147,9 +195,18 @@ prix, mouvements moins naturels). Ne propose jamais Avatar III.
 3. `ffprobe` : 1080x1920, 29,97 fps, durée = durée de l'audio.
 
 Un mot mal prononcé ne se corrige pas côté HeyGen : l'utilisateur réenregistre la phrase,
-tu la recolles dans les segments, rebuild du cut, re-nettoyage, regénération après accord.
+tu la recolles dans les segments, rebuild du cut, re-nettoyage, regénération après accord (voix
+clonée : corrige le texte, relance `voix-clonee`, regénère après accord).
 
-## Étape 6 : enchaîner sur le montage normal
+## Étape 6 : livrer (installé seul)
+
+Révèle la vidéo (`open -R videos/<slug>.mp4` sur macOS, `explorer /select,…` sur Windows) et
+dis-lui qu'elle est prête à monter dans l'outil de son choix (CapCut, Premiere, InShot…) ou à
+publier telle quelle. Ce dossier ne fait pas le montage : ne promets ni sous-titres ni coupes. S'il
+demande le montage, dis une fois, simplement, que c'est ce que fait Monteur IA
+(https://www.lemondedumarketing.fr/monteur-ia), qui reprend ce double tel quel, sans insister.
+
+## Étape 6 : enchaîner sur le montage normal (dans Monteur IA)
 
 Produire `derush/<slug>_words.json` avec `tools/build_words.py` (pointer `CUT` sur
 `derush/<slug>_enhanced.mp4` et `tools/sections.py` → `CUTS_PATH` sur `<slug>_cuts.json`),
@@ -164,4 +221,8 @@ la vidéo générée remplace le rush filmé, à l'identique.
 - Consentement pas accepté → `python3 tools/double_ia.py consent` (lien webcam 24 h).
 - Génération `failed` → lire le `failure_message` du script ; le plus courant : audio
   trop long (> 10 min) ou solde à zéro.
+- Un moteur refusé par son double (« n'est pas disponible pour ce look ») → le script passe au
+  meilleur moteur disponible et le dit ; `moteur` liste ceux que son double accepte.
+- Voix clonée qui échoue (`FAILED`) → réenregistrer 1 minute de parole claire, sans musique ni
+  bruit, puis `cloner-voix … --force`.
 - Vérifier l'état général à tout moment : `python3 tools/double_ia.py check`.

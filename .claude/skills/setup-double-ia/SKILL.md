@@ -7,7 +7,8 @@ description: >-
   HeyGen », « j'ai déjà un double HeyGen », « relie mon avatar HeyGen », ou au premier usage
   si `double-ia.config.json` n'existe pas. Guide pas à pas, une étape à la fois : compte
   HeyGen gratuit, clé API, portefeuille, vidéo d'entraînement, création du double (ou
-  liaison d'un double qui existe déjà sur HeyGen), consentement, première génération.
+  liaison d'un double qui existe déjà sur HeyGen), consentement, première génération, et en option
+  le clone de la voix. Marche dans le Monteur IA comme dans un dossier « Ton Double IA » installé seul.
 ---
 
 # Setup : Ton Double IA (onboarding guidé)
@@ -17,12 +18,15 @@ description: >-
 > « dis-moi quand c'est fait ». Tu vérifies toi-même que c'est fait (via `check`) avant
 > de passer à la suite. Ne saute jamais d'étape, ne fais jamais deux étapes d'un coup.
 
-**Où :** `double-ia.config.json` vit dans le dossier Monteur IA. Les commandes `tools/double_ia.py`
-se lancent depuis ce dossier ou depuis un Reel (depuis l'accueil de l'app : `../tools/double_ia.py`).
+**Où :** `double-ia.config.json` vit à la racine du dossier : le dossier Monteur IA (extension), ou
+le dossier « Ton Double IA » quand il est installé seul (`check` le dit, ligne « Dossier »). Dans
+Monteur IA, les commandes `tools/double_ia.py` se lancent depuis ce dossier ou depuis un Reel
+(depuis l'accueil de l'app : `../tools/double_ia.py`) ; installé seul, depuis la racine.
 
 Philosophie à annoncer d'entrée : « On configure HeyGen une seule fois. Ensuite tout se
 passe ici : tu me donnes un audio, je te rends la vidéo. Pas d'abonnement HeyGen : tu
-paies uniquement ce que tu génères, environ 2 $ pour un reel de 30 secondes. »
+paies uniquement ce que tu génères, environ 3 $ pour un reel de 30 secondes (1,50 $ en version
+rapide). »
 
 ## Reprise
 
@@ -56,7 +60,7 @@ finirait sur GitHub).
 ## Étape 3 : charger le portefeuille (interface, ~1 min)
 
 Dans le même Espace API, section facturation/billing : lui faire ajouter **10 $**
-(≈ 4-5 reels, de quoi apprendre sans stress). Bien dire : pas d'abonnement, ce solde ne
+(≈ 3 reels de 30 s en Avatar 6, 6 en Avatar 6 Turbo, de quoi apprendre sans stress). Bien dire : pas d'abonnement, ce solde ne
 se consomme que quand on génère, et **je t'annoncerai toujours le coût avant chaque
 génération**. Vérifie avec `check` que le solde apparaît.
 
@@ -76,7 +80,7 @@ python3 tools/double_ia.py lier --avatar-id <id du look> --nom "Double de <prén
 ```
 
 L'outil vérifie le look et son groupe (et corrige seul l'erreur courante : un id de groupe
-donné à la place de l'id du look), choisit le moteur que le look prend en charge et écrit
+donné à la place de l'id du look), choisit le moteur (Avatar 6 si le look le prend) et écrit
 `double-ia.config.json`. S'il refuse (look inconnu de ce compte, entraînement échoué, moteur
 non pris en charge), dis-le simplement : un double échoué ou incompatible se recrée par les
 étapes 4 et 5. Un double déjà configuré n'est remplacé qu'avec `--force`, à sa demande.
@@ -114,9 +118,10 @@ créer un mauvais double). Puis :
 python3 tools/double_ia.py create <video> --name "Double de <prénom>"
 ```
 
-Explique pendant l'attente : « HeyGen apprend ton visage et tes mouvements. Il clone
-aussi ta voix au passage, mais on ne s'en servira pas : notre méthode utilise TA vraie voix,
-c'est ce qui rend le résultat indétectable. »
+Explique pendant l'attente : « HeyGen apprend ton visage et tes mouvements. On fera parler
+ton double avec TA vraie voix, enregistrée au téléphone : c'est ce qui rend le résultat
+indétectable. Si un jour tu veux faire une vidéo sans parler du tout, on pourra aussi cloner ta
+voix (c'est gratuit, je te montrerai). »
 
 ## Étape 6 : consentement (webcam, ~2 min)
 
@@ -135,9 +140,9 @@ peut prendre quelques minutes de plus, patiente avec lui).
 Propose les deux portes d'entrée :
 1. « Tu as déjà un texte ? Lis-le au dictaphone de ton téléphone, d'une seule traite,
    et envoie-moi l'audio. »
-2. « Tu n'as pas de texte ? On l'écrit ensemble » → charge le skill de script de reel
-   du Monteur IA (`reel-script`), écris le script, fais-le valider, PUIS il le lit au
-   dictaphone.
+2. « Tu n'as pas de texte ? On l'écrit ensemble » → dans Monteur IA, charge le skill de
+   script de reel (`reel-script`) ; installé seul, écris-le avec lui (30 à 45 s, phrases
+   courtes, l'accroche dans la première phrase). Fais-le valider, PUIS il le lit au dictaphone.
 
 Règles à donner pour l'audio : dans un endroit calme, le téléphone près de la bouche, et
 **comme au prompteur** : phrase par phrase, il peut se reprendre autant de fois qu'il veut,
@@ -149,12 +154,28 @@ comme je dérushe une vidéo filmée.
 de l'audio, la validation, le nettoyage, la génération et la suite du montage). Annonce
 l'ordre à l'utilisateur pour qu'il sache ce qui vient : « je coupe ton audio, tu l'écoutes et
 tu valides, on le nettoie, PUIS je génère la vidéo (je t'annonce le coût avant), puis on monte
-comme d'habitude ».
+comme d'habitude » (installé seul : « puis je te rends la vidéo, prête à monter où tu veux »).
+
+## Étape 7 bis : la voix clonée, en option (~3 min, gratuit)
+
+Seulement après la première vidéo, et en une phrase : « Si un jour tu ne peux pas enregistrer
+(dans le train, voix cassée), je peux aussi cloner ta voix : tu me donnes un texte, ton double le
+dit. C'est un peu moins naturel que ta vraie voix. On le prépare maintenant ? » Oui → il enregistre
+**environ 1 minute** au dictaphone, dans une pièce calme, en parlant normalement (le clone garde le
+son de la pièce), puis `python3 tools/double_ia.py cloner-voix "<enregistrement>"`. Fais-lui
+entendre une phrase (`voix-clonee "Une phrase de test." --slug test-voix`, gratuit). Non → rien à
+faire, il pourra le demander plus tard.
 
 ## Étape 8 : clôture de l'onboarding
 
-Quand la première vidéo est là, explique le mode de croisière : « C'est configuré pour
-de bon. La prochaine fois, envoie-moi juste un audio en me disant "utilise mon double",
-et je te rends la vidéo montée. Tu peux aussi me demander d'écrire le script d'abord. Et
-quand tu te filmes pour de vrai, rien ne change : tu m'envoies ta vidéo, on monte comme
-avant. »
+Quand la première vidéo est là, explique le mode de croisière :
+
+- **Dans Monteur IA** : « C'est configuré pour de bon. La prochaine fois, envoie-moi juste un audio
+  en me disant "utilise mon double", et je te rends la vidéo montée. Tu peux aussi me demander
+  d'écrire le script d'abord. Et quand tu te filmes pour de vrai, rien ne change : tu m'envoies ta
+  vidéo, on monte comme avant. »
+- **Installé seul** : « C'est configuré pour de bon. La prochaine fois, envoie-moi juste un audio
+  en me disant "utilise mon double" (ou un texte, avec ta voix clonée), et je te rends la vidéo
+  dans `videos/`, prête à monter où tu veux. » Puis une seule phrase, sans insister : « Si tu veux
+  qu'elle sorte aussi montée (coupes, sous-titres, musique), c'est Monteur IA : il reprend ce
+  double tel quel. »
