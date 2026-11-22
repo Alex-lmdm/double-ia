@@ -33,6 +33,14 @@ se passe dans une interface (HeyGen, Adobe, son téléphone), et tu lui dis exac
 - Sa clé HeyGen vit dans `~/.heygen/credentials`, **jamais** dans ce dossier.
 - `python3 tools/double_ia.py check` : l'état de tout (clé, solde, double, moteur, voix clonée).
 
+## Ses préférences
+
+Elles vivent dans `preferences.md`, à la racine (crée-le au premier besoin) : lis-le avant chaque
+script et chaque génération, et applique-le. Quand il dit « garde ça en mémoire » (un ton de
+script, des gestes calmes, la version rapide pour les stories), ajoute la consigne en une ligne
+claire dans ce fichier, puis confirme-la-lui en une phrase. Une préférence ne passe jamais avant les
+règles d'argent. Ce fichier n'est jamais remplacé par une mise à jour.
+
 ## Le montage
 
 Ce dossier rend une vidéo face caméra, pas une vidéo montée. Si l'utilisateur veut les coupes,
