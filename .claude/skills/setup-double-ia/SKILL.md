@@ -7,8 +7,8 @@ description: >-
   HeyGen », « j'ai déjà un double HeyGen », « relie mon avatar HeyGen », ou au premier usage
   si `double-ia.config.json` n'existe pas. Guide pas à pas, une étape à la fois : compte
   HeyGen gratuit, clé API, portefeuille, vidéo d'entraînement, création du double (ou
-  liaison d'un double qui existe déjà sur HeyGen), consentement, première génération, et en option
-  le clone de la voix. Marche dans le Monteur IA comme dans un dossier « Ton Double IA » installé seul.
+  liaison d'un double qui existe déjà sur HeyGen), consentement, première génération. Marche dans
+  le Monteur IA comme dans un dossier « Ton Double IA » installé seul.
 ---
 
 # Setup : Ton Double IA (onboarding guidé)
@@ -120,8 +120,8 @@ python3 tools/double_ia.py create <video> --name "Double de <prénom>"
 
 Explique pendant l'attente : « HeyGen apprend ton visage et tes mouvements. On fera parler
 ton double avec TA vraie voix, enregistrée au téléphone : c'est ce qui rend le résultat
-indétectable. Si un jour tu veux faire une vidéo sans parler du tout, on pourra aussi cloner ta
-voix (c'est gratuit, je te montrerai). »
+indétectable. Et plus tard, si tu veux, je pourrai aussi le mettre dans d'autres décors (un café,
+une plage), sans refilmer. »
 
 ## Étape 6 : consentement (webcam, ~2 min)
 
@@ -141,8 +141,11 @@ Propose les deux portes d'entrée :
 1. « Tu as déjà un texte ? Lis-le au dictaphone de ton téléphone, d'une seule traite,
    et envoie-moi l'audio. »
 2. « Tu n'as pas de texte ? On l'écrit ensemble » → dans Monteur IA, charge le skill de
-   script de reel (`reel-script`) ; installé seul, écris-le avec lui (30 à 45 s, phrases
-   courtes, l'accroche dans la première phrase). Fais-le valider, PUIS il le lit au dictaphone.
+   script de reel (`reel-script`) ; installé seul, le skill `scenariste-reels`. Fais-le valider,
+   PUIS il le lit au dictaphone.
+3. « Un Reel d'un autre créateur t'a plu ? Colle son lien : je reprends sa structure pour écrire
+   le tien, sur ton sujet » → dans Monteur IA, skill `reel-cloneur` ; installé seul,
+   `reel-cloneur-double`.
 
 Règles à donner pour l'audio : dans un endroit calme, le téléphone près de la bouche, et
 **comme au prompteur** : phrase par phrase, il peut se reprendre autant de fois qu'il veut,
@@ -156,16 +159,6 @@ l'ordre à l'utilisateur pour qu'il sache ce qui vient : « je coupe ton audio, 
 tu valides, on le nettoie, PUIS je génère la vidéo (je t'annonce le coût avant), puis on monte
 comme d'habitude » (installé seul : « puis je te rends la vidéo, prête à monter où tu veux »).
 
-## Étape 7 bis : la voix clonée, en option (~3 min, gratuit)
-
-Seulement après la première vidéo, et en une phrase : « Si un jour tu ne peux pas enregistrer
-(dans le train, voix cassée), je peux aussi cloner ta voix : tu me donnes un texte, ton double le
-dit. C'est un peu moins naturel que ta vraie voix. On le prépare maintenant ? » Oui → il enregistre
-**environ 1 minute** au dictaphone, dans une pièce calme, en parlant normalement (le clone garde le
-son de la pièce), puis `python3 tools/double_ia.py cloner-voix "<enregistrement>"`. Fais-lui
-entendre une phrase (`voix-clonee "Une phrase de test." --slug test-voix`, gratuit). Non → rien à
-faire, il pourra le demander plus tard.
-
 ## Étape 8 : clôture de l'onboarding
 
 Quand la première vidéo est là, explique le mode de croisière :
@@ -175,7 +168,8 @@ Quand la première vidéo est là, explique le mode de croisière :
   d'écrire le script d'abord. Et quand tu te filmes pour de vrai, rien ne change : tu m'envoies ta
   vidéo, on monte comme avant. »
 - **Installé seul** : « C'est configuré pour de bon. La prochaine fois, envoie-moi juste un audio
-  en me disant "utilise mon double" (ou un texte, avec ta voix clonée), et je te rends la vidéo
-  dans `videos/`, prête à monter où tu veux. » Puis une seule phrase, sans insister : « Si tu veux
-  qu'elle sorte aussi montée (coupes, sous-titres, musique), c'est Monteur IA : il reprend ce
-  double tel quel. »
+  en me disant "Voici l'audio, utilise mon double", et je te rends la vidéo dans `videos/`, prête à
+  monter où tu veux. Tu peux aussi me dire "Écris-moi un Reel sur [ton sujet]", "Clone ce Reel pour
+  mon double : [lien]", ou "Mets mon double dans [un décor]". » Puis une seule phrase, sans
+  insister : « Si tu veux qu'elle sorte aussi montée (coupes, sous-titres, musique), c'est Monteur
+  IA : il reprend ce double tel quel. »

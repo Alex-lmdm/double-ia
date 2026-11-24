@@ -2,26 +2,28 @@
 name: double-ia
 description: >-
   Génère la vidéo face-cam de l'utilisateur avec son double HeyGen, depuis un AUDIO de sa vraie
-  voix (par défaut) ou depuis un TEXTE lu par sa voix clonée (option « zéro micro »), puis enchaîne
-  sur le montage Monteur IA, ou rend la vidéo prête à monter quand Ton Double IA est installé seul.
-  Use when the user provides an AUDIO file (dictaphone, mp3, m4a, wav) and says « utilise mon
-  double », « génère avec mon avatar », « ma vidéo avec le double IA », or gives a TEXT and says
-  « avec ma voix clonée », « sans micro », « fais parler mon double ». Ne s'applique PAS si
+  voix (jamais de voix clonée), dans son décor habituel ou dans un décor créé pour lui, puis
+  enchaîne sur le montage Monteur IA, ou rend la vidéo prête à monter quand Ton Double IA est
+  installé seul. Use when the user provides an AUDIO file (dictaphone, mp3, m4a, wav) and says
+  « voici l'audio, utilise mon double », « voici l'audio, utilise mon double au café » (un décor
+  nommé), « génère avec mon avatar », « génère avec des gestes plus calmes », « fais-la en version
+  rapide », or asks « mets mon double dans [un décor] », « mes décors ». Ne s'applique PAS si
   l'utilisateur fournit une VIDÉO de lui. Si `double-ia.config.json` n'existe pas → router vers
-  `setup-double-ia`. JAMAIS de génération sans confirmation explicite du coût.
+  `setup-double-ia`. JAMAIS de génération ni de décor sans confirmation explicite du coût.
 ---
 
 # Double IA : voix → vidéo face-cam → montage
 
 L'utilisateur a un double HeyGen (configuré par `/setup-double-ia`, config dans
-`double-ia.config.json`). Deux façons de le faire parler :
+`double-ia.config.json`). Il le fait parler avec **sa vraie voix, toujours** : il écrit son script
+(ou tu l'écris avec lui), le lit au dictaphone de son téléphone et t'envoie l'audio. **L'audio
+envoyé EST la piste son finale** : c'est ce qui rend le résultat naturel. Étapes 1 à 6. Ce produit
+ne clone pas la voix : s'il le demande, dis-le simplement (sa vraie voix est ce qui rend le double
+indétectable) et propose d'enregistrer, même 30 secondes au téléphone.
 
-- **Sa vraie voix (par défaut, la plus naturelle)** : il écrit son script (ou tu l'écris avec lui),
-  le lit au dictaphone de son téléphone et t'envoie l'audio. **L'audio envoyé EST la piste son
-  finale** : c'est ce qui rend le résultat naturel. Étapes 1 à 3, puis 4.
-- **Sa voix clonée (zéro micro)**, seulement s'il la demande ou ne peut pas enregistrer : il te
-  donne le texte, sa voix clonée le lit (§ Voix clonée), puis étape 4. Plus pratique, un peu moins
-  naturel : dis-le-lui une fois, sans le décourager.
+Trois variantes de l'étape 4, sur sa demande : **un décor** (« Mets mon double dans [décor] »,
+puis « utilise mon double au café », § Décors), **la version rapide** (« Fais-la en version
+rapide ») et **des gestes plus calmes** (« Génère avec des gestes plus calmes »).
 
 **Deux installations possibles** (`python3 tools/double_ia.py check` dit laquelle, ligne « Dossier ») :
 
@@ -30,11 +32,13 @@ L'utilisateur a un double HeyGen (configuré par `/setup-double-ia`, config dans
   comme pour une vidéo filmée, avec `tools/nouveau_reel.py "<sujet>"` du dossier Monteur IA (depuis
   l'accueil de l'app : `../tools/nouveau_reel.py`), puis travaille dans son dossier. La config du
   double reste dans le dossier Monteur IA, partagée par tous les Reels. (Ancienne installation sans
-  `reels/` : tout se passe à la racine, comme avant.) Script : skill `reel-script`.
+  `reels/` : tout se passe à la racine, comme avant.) Script : skill `reel-script` ; un Reel à
+  cloner : skill `reel-cloneur` de Monteur IA.
 - **Seul** (dossier « Ton Double IA », sans `templates/AGENT.md.tpl`) : tout se passe à la racine du
   dossier, aucun Reel à créer. La vidéo finie sort dans `videos/<slug>.mp4` ; il n'y a pas de montage
-  derrière (étape 6). Script : écris-le avec lui (30 à 45 s, phrases courtes, l'accroche dans la
-  première phrase), fais-le valider avant qu'il le lise.
+  derrière (étape 6). Script : skill `scenariste-reels` (« Écris-moi un Reel sur [son sujet] »), à
+  faire valider avant qu'il le lise ; un Reel à cloner : skill `reel-cloneur-double` (« Clone ce
+  Reel pour mon double : [lien] »).
 
 **Quand ce skill ne s'active pas :** l'utilisateur t'envoie une **vidéo** de lui → dans Monteur IA,
 pipeline normal (`derush` puis `motion-design`), le double n'intervient pas ; installé seul, dis-lui
@@ -43,9 +47,10 @@ simplement que ce dossier fabrique des vidéos avec son double et ne monte pas u
 ## ⛔ Règles d'argent
 
 - Chaque génération débite le portefeuille HeyGen de l'utilisateur (le script affiche le coût
-  exact avant chaque génération : environ 3 $ le Reel de 30 s en Avatar 6, 1,50 $ en Avatar 6
-  Turbo). **Jamais de génération sans son accord explicite sur le coût affiché** par le
-  script. Ne passe `--yes` que s'il vient de dire oui dans la conversation.
+  exact avant chaque génération : environ 3 $ le Reel de 30 s en Avatar 6, 1,50 $ en version
+  rapide), et chaque décor aussi (environ 1 $). **Jamais de génération ni de décor sans son accord
+  explicite sur le coût affiché** par le script. Ne passe `--yes` que s'il vient de dire oui dans
+  la conversation.
 - **On ne génère jamais l'enregistrement brut.** Un script lu au dictaphone contient des
   blancs, des faux départs et des phrases reprises (mesuré : 94 s de brut pour 44 s utiles,
   soit le double du prix pour rien). On coupe l'audio D'ABORD (étape 1), on génère ensuite.
@@ -71,27 +76,6 @@ remplacer la piste sur laquelle le lip sync a été calculé (désynchro). Et ne
 le cut plutôt qu'avant : le nettoyage uniformise le fond sonore sur l'ensemble, ce qui
 masque les jump-cuts au lieu de les souligner.
 
-## Voix clonée (zéro micro) : à la place des étapes 1 à 3
-
-Seulement s'il la demande. `python3 tools/double_ia.py check` dit s'il a une voix clonée ; sinon,
-crée-la une fois (gratuit, quelques secondes) : il enregistre **environ 1 minute** de sa voix au
-dictaphone, dans une pièce calme, en parlant normalement (le clone garde le son de la pièce), puis
-
-```bash
-python3 tools/double_ia.py cloner-voix "<enregistrement>"
-```
-
-Ensuite, à chaque vidéo : fais-lui valider le texte, puis
-
-```bash
-python3 tools/double_ia.py voix-clonee "<texte, ou fichier .txt>" --slug <slug>
-```
-
-Il écrit `derush/<slug>_voix_clonee.mp3` (déjà propre : ni dérush ni Adobe Podcast) et les bornes
-de chaque phrase (`<slug>_audio_timeline.json`). **Fais-le écouter avant de générer** (même geste
-que l'étape 2). Un mot mal dit : réécris-le comme il se prononce, ou reformule la phrase, et
-relance (gratuit). Validé : étape 4 sur `derush/<slug>_voix_clonee.mp3`.
-
 ## Étape 1 : dérusher l'audio
 
 Même méthode que le skill `derush`, mais sur l'audio seul (pas de vidéo, donc pas de
@@ -106,7 +90,8 @@ détection de changement de plan). Outils et modèle Whisper : `brand.config.jso
    îlot, la transcription par îlot rend la sélection auto-vérifiante.
 3. **Sélection : toujours la DERNIÈRE tentative complète de chaque phrase.** C'est la
    meilleure. Jeter les faux départs et les variantes intermédiaires. Le script connu sert de
-   référence : une phrase jamais dite proprement → le signaler, proposer de la réenregistrer.
+   référence (installé seul : `scripts/<slug>.md`, ou `clones/<nom>/script.md` pour un Reel
+   cloné) : une phrase jamais dite proprement → le signaler, proposer de la réenregistrer.
 4. Deux pièges connus :
    - un **mot isolé** dans son propre îlot (« Tu », 0,24 s) suivi d'un blanc : presque toujours
      un faux départ, pas un début de phrase à recoller. **Zoomer mot-à-mot sur l'attaque de la
@@ -159,8 +144,9 @@ avant de générer. **C'est ce fichier nettoyé, et lui seul, qui part en géné
 ## Étape 4 : générer
 
 ```bash
-python3 tools/double_ia.py generate derush/<slug>_voice_enhanced.mp3     # sa vraie voix
-python3 tools/double_ia.py generate derush/<slug>_voix_clonee.mp3        # sa voix clonée
+python3 tools/double_ia.py generate derush/<slug>_voice_enhanced.mp3
+python3 tools/double_ia.py generate derush/<slug>_voice_enhanced.mp3 --decor cafe   # dans un décor
+python3 tools/double_ia.py generate derush/<slug>_voice_enhanced.mp3 --rapide       # version rapide
 ```
 
 Le script refuse un `_voice.mp3` non nettoyé et un audio sans `_audio_timeline.json` (garde-fou
@@ -170,23 +156,82 @@ s'arrête là sans rien débiter (annonce ce coût, attends son oui, relance ave
 `--yes`, il génère avec le moteur de la config, puis conforme : 25 → 29,97 fps, crf 14, et remet
 l'audio d'origine. Sorties : dans Monteur IA, `derush/<slug>_enhanced.mp4` (le même nom qu'un
 dérush filmé) et `derush/<slug>_cuts.json` (frontières des prises, dérivées du cut audio : le
-double ne saute pas à l'image, pas de scene-change à mesurer) ; installé seul, `videos/<slug>.mp4`.
-Limites : 10 min / 50 Mo. Un rendu prend 1 à 3 minutes pour 30 s.
+double ne saute pas à l'image, pas de scene-change à mesurer) ; installé seul, `videos/<slug>.mp4`
+(`videos/<slug>-<décor>.mp4` dans un décor). Limites : 10 min / 50 Mo. Un rendu prend 1 à 3
+minutes pour 30 s.
 
 **Le moteur** (`python3 tools/double_ia.py moteur` les liste avec leur prix, `moteur <nom>` en
 change pour les vidéos suivantes) :
 - **Avatar 6** (`heygen-avatar-6`), celui d'un nouveau double : les gestes suivent ce qu'il dit,
   environ 3 $ le Reel de 30 s.
-- **Avatar 6 Turbo** (`heygen-avatar-6-turbo`) : moitié prix, rendu plus rapide, un peu moins
+- **Avatar 6 Turbo** (`heygen-avatar-6-turbo`), la **version rapide** : moitié prix (environ
+  0,05 $ la seconde au lieu de 0,10 $, 1,50 $ le Reel de 30 s), rendu plus rapide, un peu moins
   fin. À proposer pour un essai ou s'il veut dépenser moins.
 - **Avatar IV** et **Avatar V** : les anciens moteurs (environ 2,20 $). Un double configuré avant
   Avatar 6 garde le sien : `check` signale qu'Avatar 6 est disponible ; propose-le une fois, avec
   son prix, et ne change de moteur que sur son oui. Ne propose jamais Avatar III.
 
+**« Fais-la en version rapide »** : ajoute `--rapide` à CETTE génération (Avatar 6 Turbo). Le
+moteur gardé dans la config ne change pas : la vidéo suivante repart en Avatar 6. Le coût annoncé
+est celui de la version rapide ; son accord porte sur ce coût-là. S'il veut la version rapide
+pour toutes ses vidéos (« garde ça en mémoire »), c'est une préférence (installé seul :
+`preferences.md`) ou `python3 tools/double_ia.py moteur heygen-avatar-6-turbo`, à sa demande. Un
+double qui ne prend pas Turbo : le script le dit et ne lance rien ; propose la version normale
+avec son prix.
+
 **Sa gestuelle** (Avatar 6, et Avatar V pour la direction) : `--direction "<consigne>"` décrit
 le jeu voulu en une phrase claire, de préférence en anglais (« smile warmly, small open-handed
-gestures »), et `--calme` donne des gestes plus rares et plus petits. Seulement s'il le demande ou
-si un rendu précédent bougeait trop : par défaut, Avatar 6 cale déjà les gestes sur le texte.
+gestures »), et `--calme` donne des gestes plus rares et plus petits (« Génère avec des gestes
+plus calmes »). Seulement s'il le demande ou si un rendu précédent bougeait trop : par défaut,
+Avatar 6 cale déjà les gestes sur le texte.
+
+## Décors (bonus « Ton double partout »)
+
+Son double est filmé dans le lieu de sa vidéo d'entraînement. Un **décor** le place ailleurs (un
+café, une plage, un bureau en open space) sans refilmer : HeyGen crée une image de lui dans ce
+lieu (environ 1 $, une fois), puis chaque vidéo dans ce décor coûte le même prix qu'une vidéo
+normale. Le double y rejoue les gestes de sa vidéo d'entraînement (Avatar 6).
+
+**« Mets mon double dans [décor] »** :
+
+1. Écris le prompt **en anglais**, en une description concrète, dans cet ordre :
+   - **le décor** : le lieu et deux ou trois détails visibles (« sitting at a small wooden table in
+     a cozy Parisian café, espresso cup on the table, blurred coffee bar in the background ») ;
+   - **la lumière** : d'où elle vient, sa couleur (« soft morning daylight from a large window on
+     the left ») ;
+   - **le cadrage**, toujours : « medium shot from the waist up, facing the camera, vertical
+     framing » ;
+   - **le réalisme**, toujours : « natural matte skin, no retouching, photorealistic, 35mm lens ».
+   L'outil ajoute lui-même devant « Same person, same face and same outfit as the reference » :
+   n'y décris ni son visage ni sa tenue (la tenue reste celle de sa vidéo d'entraînement ; dis-le
+   s'il demande une autre tenue).
+2. Annonce-lui en français, en deux phrases, le décor que tu vas demander et le prix : « Je crée
+   ton double dans un petit café parisien, lumière du matin, cadré à la taille. Ça coûte environ
+   1 $, une seule fois, ensuite tes vidéos dans ce décor coûtent le prix normal. On y va ? »
+   **Attends son oui.**
+3. Choisis un nom court, sans accent (`cafe`, `plage`, `bureau-open-space`), puis :
+
+```bash
+python3 tools/double_ia.py decor "<prompt anglais>" --nom <nom> --yes
+```
+
+   Il affiche le coût estimé et le solde, crée le décor (environ 45 s), range l'image dans
+   `decors/<nom>.jpg`, écrit le décor dans `double-ia.config.json` et affiche le coût réel.
+4. **Montre-lui l'image** (`open decors/<nom>.jpg` sur macOS, `start` sur Windows), et regarde-la
+   toi aussi : même visage, cadrage à la taille, vertical, rien de bizarre (mains, texte, objets
+   coupés). S'il ne l'aime pas : reformule la description et refais-le UNE fois avec `--force`,
+   après nouvel accord sur 1 $. Pas d'essais en rafale.
+
+**« Voici l'audio, utilise mon double au café »** (une phrase qui nomme un lieu) : `python3
+tools/double_ia.py decors` liste ses décors. Le lieu correspond à un décor (« au café » →
+`cafe`) : étapes 1 à 3 comme d'habitude, puis l'étape 4 avec `--decor <nom>`. Aucun décor ne
+correspond : dis-le, et propose de le créer (environ 1 $, après accord) ou de générer dans son
+décor habituel. Une vidéo dans un décor part en Avatar 6 (le script le dit si le moteur gardé est
+un ancien) ; `--rapide` marche aussi si le décor prend Avatar 6 Turbo.
+
+Un décor qui n'a pas fini à temps (« HeyGen finit encore ce décor ») : `python3
+tools/double_ia.py decors` télécharge son image plus tard, gratuitement. Un décor échoué :
+reformule la description (une nouvelle description est un nouvel essai, environ 1 $, après accord).
 
 ## Étape 5 : vérifier avant de montrer
 
@@ -195,8 +240,7 @@ si un rendu précédent bougeait trop : par défaut, Avatar 6 cale déjà les ge
 3. `ffprobe` : 1080x1920, 29,97 fps, durée = durée de l'audio.
 
 Un mot mal prononcé ne se corrige pas côté HeyGen : l'utilisateur réenregistre la phrase,
-tu la recolles dans les segments, rebuild du cut, re-nettoyage, regénération après accord (voix
-clonée : corrige le texte, relance `voix-clonee`, regénère après accord).
+tu la recolles dans les segments, rebuild du cut, re-nettoyage, regénération après accord.
 
 ## Étape 6 : livrer (installé seul)
 
@@ -223,6 +267,6 @@ la vidéo générée remplace le rush filmé, à l'identique.
   trop long (> 10 min) ou solde à zéro.
 - Un moteur refusé par son double (« n'est pas disponible pour ce look ») → le script passe au
   meilleur moteur disponible et le dit ; `moteur` liste ceux que son double accepte.
-- Voix clonée qui échoue (`FAILED`) → réenregistrer 1 minute de parole claire, sans musique ni
-  bruit, puis `cloner-voix … --force`.
+- « Pas de décor « … » » → `python3 tools/double_ia.py decors` liste ses décors ; un nouveau se
+  crée avec `decor` (environ 1 $, après accord).
 - Vérifier l'état général à tout moment : `python3 tools/double_ia.py check`.

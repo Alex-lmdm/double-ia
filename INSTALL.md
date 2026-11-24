@@ -10,7 +10,8 @@ Ton Double IA s'installe de deux façons, choisies toutes seules par ton agent :
 - **Dans ton Monteur IA** (si tu l'as) : c'est une extension, ton monteur enchaîne le montage
   dès que ton double a parlé.
 - **Seul**, dans son propre dossier « Ton Double IA » : tu récupères tes vidéos face caméra,
-  prêtes à monter dans l'outil de ton choix.
+  prêtes à monter dans l'outil de ton choix, avec les bonus (ton scénariste de Reels, le Reel
+  Cloneur de ton double, ton double partout).
 
 Rien à configurer à la main : l'installation copie les fichiers (et, seul, installe les outils
 qui manquent), puis ton agent te guide de zéro (compte HeyGen, clé, ton double) avec
@@ -71,7 +72,8 @@ A2. COPIE dans MAISON, depuis le dossier de l'extension (étapes idempotentes : 
     fichier identique est déjà là, ne le copie pas deux fois ; s'il existe en version
     différente, remplace-le) :
     a) `.claude/skills/double-ia/` et `.claude/skills/setup-double-ia/`
-       → dans `.claude/skills/` ;
+       → dans `.claude/skills/` (pas `scenariste-reels` ni `reel-cloneur-double` : Monteur
+       IA a déjà les siens, `reel-script` et `reel-cloneur`) ;
     b) `tools/double_ia.py` et `tools/build_audio_cut.py` → dans `tools/` ;
     c) AIGUILLAGE : si `templates/AGENT.md.tpl` ne contient PAS le marqueur
        « BEGIN EXTENSION: double-ia », ajoute le contenu INTÉGRAL du fichier
@@ -94,7 +96,7 @@ A4. Lance `node "<MAISON>/scripts/sync.mjs"` (c'est `npm run sync` : il régén�
 A5. Termine. Si `double-ia.config.json` existe déjà (mise à jour) : lance
     `python3 tools/double_ia.py check` ; s'il dit qu'Avatar 6 est disponible, propose-le-moi
     une fois avec son prix (`python3 tools/double_ia.py moteur`), et change de moteur
-    seulement si je dis oui. Sinon, dis-moi : « Extension installée. Dis-moi "setup double IA"
+    seulement si je dis oui. Sinon, dis-moi : « Extension installée. Dis-moi "Crée mon double IA"
     et je te guide de zéro : compte HeyGen gratuit, ta clé, ton double, ta première vidéo. »
 
 B. MODE SEUL (dossier « Ton Double IA », sans Monteur IA)
@@ -107,7 +109,8 @@ B1. DOSSIER. MAISON = le dossier courant s'il est vide, s'il s'appelle « Ton Do
     Évite Documents, le Bureau, iCloud Drive et OneDrive : ils sont souvent synchronisés.
 
 B2. COPIE dans MAISON, depuis le dossier de l'extension (idempotent, comme en A2) :
-    a) `.claude/skills/double-ia/` et `.claude/skills/setup-double-ia/` → dans
+    a) `.claude/skills/double-ia/`, `.claude/skills/setup-double-ia/`,
+       `.claude/skills/scenariste-reels/` et `.claude/skills/reel-cloneur-double/` → dans
        `.claude/skills/` ET dans `.agents/skills/` (le second sert à Codex) ;
     b) `tools/double_ia.py` et `tools/build_audio_cut.py` → dans `tools/` ;
     c) `templates/consignes-seul.md` → copié DEUX fois, en `CLAUDE.md` et en `AGENTS.md`
@@ -135,21 +138,26 @@ B3. OUTILS. Vérifie chacun, et annonce en une fois ce qui manque (avec la taill
       rangé dans `~/.cache/monteur-ia/whisper/` (Windows : sous `%USERPROFILE%`), là où Monteur
       IA le cherchera s'il est installé un jour. Connexion limitée : `ggml-small.bin` (~0,5 Go),
       un peu moins précis.
+    - **yt-dlp** (gratuit, il télécharge les Reels à cloner) : `yt-dlp --version`, version
+      2026.07.01 ou plus récente (en dessous, Instagram ne se télécharge plus). macOS :
+      `brew install yt-dlp` (trop ancien : `brew upgrade yt-dlp`). Windows :
+      `winget install -e --id yt-dlp.yt-dlp` (trop ancien : `winget upgrade -e --id
+      yt-dlp.yt-dlp`). Quelques dizaines de Mo.
 
 B4. RÉGLAGES. Crée `brand.config.json` à la racine de MAISON s'il manque (sinon, complète
     seulement ce qui manque), avec les chemins RÉELLEMENT trouvés :
     { "env": { "ffmpegPath": "<dossier qui contient ffmpeg>", "whisperCli": "<chemin de
-      whisper-cli>", "whisperModel": "<chemin du modèle>" },
+      whisper-cli>", "whisperModel": "<chemin du modèle>", "ytDlp": "<chemin de yt-dlp>" },
       "derush": { "whisperLanguage": "<langue de mes vidéos, ex. fr>", "padStart": 0.04,
       "padEnd": 0.02 } }
 
 B5. VÉRIFIE avant d'annoncer la réussite : `python3 tools/double_ia.py --help` sans erreur ;
-    `ffprobe -version` ; Whisper sur un petit son de test fabriqué avec FFmpeg (code de
-    sortie 0 et modèle réellement chargé ; un son sans parole peut ne donner aucun mot, ce
-    n'est pas un échec). Fais un bilan bref : **✅ Vérifié** seulement ce qui est testé, sinon
+    `ffprobe -version` ; `yt-dlp --version` (2026.07.01 ou plus) ; Whisper sur un petit son
+    de test fabriqué avec FFmpeg (code de sortie 0 et modèle réellement chargé ; un son sans
+    parole peut ne donner aucun mot, ce n'est pas un échec). Fais un bilan bref : **✅ Vérifié** seulement ce qui est testé, sinon
     **À terminer** avec la prochaine action. Supprime les fichiers de test.
 
-B6. Termine en me disant : « Ton Double IA est installé. Dis-moi "setup double IA" et je te
+B6. Termine en me disant : « Ton Double IA est installé. Dis-moi "Crée mon double IA" et je te
     guide de zéro : compte HeyGen gratuit, ta clé, ton double, ta première vidéo. » Si tu as
     créé MAISON ailleurs que dans le dossier courant (B1), dis-moi d'abord de rouvrir mon agent
     dans ce dossier, en me donnant son chemin.
@@ -165,7 +173,12 @@ Dis simplement à ton agent :
 /setup-double-ia
 ```
 
-(sous Codex : « setup double IA »). Il te guide pas à pas : compte HeyGen gratuit (aucun
-abonnement à prendre), ta clé API, quelques euros de crédit, ta vidéo d'entraînement de 30
-secondes, et ta première génération. Compte 20 minutes la première fois ; ensuite, c'est
-configuré pour de bon.
+(sous Codex : « setup double IA », ou simplement « Crée mon double IA »). Il te guide pas à pas :
+compte HeyGen gratuit (aucun abonnement à prendre), ta clé API, quelques euros de crédit, ta vidéo
+d'entraînement de 30 secondes, et ta première génération. Compte 20 minutes la première fois ;
+ensuite, c'est configuré pour de bon. Tu as déjà un double sur HeyGen : dis « J'ai déjà un double
+HeyGen », il le relie sans rien recréer.
+
+Ensuite, les phrases à lui dire sont dans le [README](README.md) : « Voici l'audio, utilise mon
+double. », « Écris-moi un Reel sur [ton sujet] », « Clone ce Reel pour mon double : [lien du
+Reel] », « Mets mon double dans [décor] », « Fais-la en version rapide »…
