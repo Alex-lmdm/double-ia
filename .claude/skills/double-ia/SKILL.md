@@ -78,7 +78,7 @@ masque les jump-cuts au lieu de les souligner.
 
 ## Étape 1 : dérusher l'audio
 
-Même méthode que le skill `derush`, mais sur l'audio seul (pas de vidéo, donc pas de
+Même méthode que le skill `derush` de Monteur IA (installé seul, tout est décrit ici), mais sur l'audio seul (pas de vidéo, donc pas de
 détection de changement de plan). Outils et modèle Whisper : `brand.config.json` → `env`
 (`ffmpegPath`, `whisperCli`, `whisperModel`), langue : `derush.whisperLanguage`.
 
@@ -126,7 +126,7 @@ rebuild, re-vérifier.
 
 Une seule méthode, **toujours la même** : Adobe Podcast Enhance (gratuit, compte Adobe). Ne
 propose jamais d'alternative (pas de filtre ffmpeg, pas de « je le fais moi-même »). C'est le
-même geste que le skill `derush` §7 :
+même geste que le skill `derush` §7 de Monteur IA (décrit ici en entier) :
 
 1. Donne à l'utilisateur, en un seul message, exactement ces consignes puis attends :
    > « Ouvre https://podcast.adobe.com/enhance (connecté à ton compte Adobe), glisse le fichier

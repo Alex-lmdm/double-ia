@@ -116,10 +116,11 @@ B2. COPIE dans MAISON, depuis le dossier de l'extension (idempotent, comme en A2
     c) `templates/consignes-seul.md` → copié DEUX fois, en `CLAUDE.md` et en `AGENTS.md`
        à la racine de MAISON (ce sont les consignes du dossier ; une version plus ancienne
        est remplacée) ;
-    d) crée les dossiers `videos/` et `derush/` s'ils manquent.
+    d) crée les dossiers `videos/`, `derush/` et `work/` s'ils manquent.
 
-B3. OUTILS. Vérifie chacun, et annonce en une fois ce qui manque (avec la taille des
-    téléchargements) avant d'installer :
+B3. OUTILS. Vérifie chacun, puis fais-moi le bilan en une fois : ce qui est déjà prêt, ce qui
+    manque, et la taille de ce que tu vas télécharger. S'il manque quelque chose, ATTENDS mon
+    « go » avant d'installer. Rien ne manque : dis-le et continue.
     - **Python 3.9 minimum** : macOS `python3 --version` (s'il manque, le Mac propose
       d'installer les « outils de développement en ligne de commande » : c'est la bonne
       réponse). Windows : `python --version`, sinon `py --version` ; absent :
@@ -132,11 +133,14 @@ B3. OUTILS. Vérifie chacun, et annonce en une fois ce qui manque (avec la taill
       `whisper-cli` (macOS : `command -v whisper-cli` ; PowerShell : `Get-Command whisper-cli
       -ErrorAction SilentlyContinue`) et un modèle `ggml-*.bin` dans `~/.cache/monteur-ia/whisper/`,
       `~/.cache/hyperframes/whisper/models/`, `~/whisper-models/` et `~/.cache/whisper/`. Garde
-      un binaire et un modèle qui marchent déjà. macOS : `brew install whisper.cpp` ; Windows :
+      un binaire et un modèle qui marchent déjà (plusieurs modèles : `large-v3-turbo` d'abord,
+      sinon le plus gros ; jamais un modèle `.en`, qui ne comprend que l'anglais). macOS : `brew install whisper.cpp` ; Windows :
       le binaire whisper.cpp compatible des releases officielles `ggml-org/whisper.cpp` (vérifie
       que l'archive existe vraiment). Modèle manquant : `ggml-large-v3-turbo.bin` (~1,6 Go),
-      rangé dans `~/.cache/monteur-ia/whisper/` (Windows : sous `%USERPROFILE%`), là où Monteur
-      IA le cherchera s'il est installé un jour. Connexion limitée : `ggml-small.bin` (~0,5 Go),
+      fichier officiel de whisper.cpp
+      (`https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin`),
+      rangé dans `~/.cache/monteur-ia/whisper/` (Windows : sous `%USERPROFILE%`) : ce nom de
+      dossier est voulu, Monteur IA y retrouvera le modèle s'il est installé un jour. Connexion limitée : `ggml-small.bin` (~0,5 Go),
       un peu moins précis.
     - **yt-dlp** (gratuit, il télécharge les Reels à cloner) : `yt-dlp --version`, version
       2026.07.01 ou plus récente (en dessous, Instagram ne se télécharge plus). macOS :
@@ -150,12 +154,14 @@ B4. RÉGLAGES. Crée `brand.config.json` à la racine de MAISON s'il manque (sin
       whisper-cli>", "whisperModel": "<chemin du modèle>", "ytDlp": "<chemin de yt-dlp>" },
       "derush": { "whisperLanguage": "<langue de mes vidéos, ex. fr>", "padStart": 0.04,
       "padEnd": 0.02 } }
+    La langue de mes vidéos est celle dans laquelle je te parle, sauf si je t'en ai dit une autre.
 
 B5. VÉRIFIE avant d'annoncer la réussite : `python3 tools/double_ia.py --help` sans erreur ;
     `ffprobe -version` ; `yt-dlp --version` (2026.07.01 ou plus) ; Whisper sur un petit son
     de test fabriqué avec FFmpeg (code de sortie 0 et modèle réellement chargé ; un son sans
     parole peut ne donner aucun mot, ce n'est pas un échec). Fais un bilan bref : **✅ Vérifié** seulement ce qui est testé, sinon
-    **À terminer** avec la prochaine action. Supprime les fichiers de test.
+    **À terminer** avec la prochaine action. Supprime les fichiers de test et le dossier temporaire
+    de l'archive.
 
 B6. Termine en me disant : « Ton Double IA est installé. Dis-moi "Crée mon double IA" et je te
     guide de zéro : compte HeyGen gratuit, ta clé, ton double, ta première vidéo. » Si tu as
